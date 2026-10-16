@@ -4,8 +4,7 @@ import Container from "@components/Container.astro";
 import PageLayout from "@layouts/PageLayout.astro";
 import ArrowCard from "@components/ArrowCard.astro";
 import Link from "@components/Link.astro";
-import BlurText from "@components/reactbits/BlurText";
-import RoleLine from "@components/react/RoleLine";
+import StrokeHeading from "@components/react/StrokeHeading";
 import { dateRange } from "@lib/utils";
 import { SITE, HOME, SOCIALS } from "@consts";
 
@@ -37,39 +36,17 @@ const work = await Promise.all(
 
 <PageLayout title={HOME.TITLE} description={HOME.DESCRIPTION}>
   <Container>
-    <div
-      role="heading"
-      aria-level="1"
-      class="mb-6 text-3xl sm:text-4xl font-semibold tracking-tight text-black dark:text-white"
-    >
-      <BlurText
-        client:load
-        text="Hi, I'm Karan! 👋🏻"
-        animateBy="words"
-        direction="top"
-        delay={120}
-        trigger="load"
-      />
-    </div>
     <div class="space-y-20">
-      <section>
-        <article class="space-y-2">
-          <div class="animate">
-            <RoleLine client:load />
-          </div>
+      <section class="space-y-5">
+        <h1 class="text-black dark:text-white">
+          <StrokeHeading client:load text="Hi, I'm Karan." fontSize={44} />
+        </h1>
+        <p class="text-black dark:text-white">
+          <StrokeHeading client:load text="Research Engineer" fontSize={24} fontWeight={500} delay={0.5} />
+        </p>
+        <article>
           <p class="animate">
-            I love to <em><b>analyze, build & break down</b></em> interesting technology.
-            <br />
-            I build <em><b>functional</b></em> agentic systems that transform
-            <em><b>raw data</b></em> into <em><b>dynamic intelligence</b></em>.
-          </p>
-          <p class="animate">
-            <Link
-              href={`mailto:${SITE.EMAIL}`}
-              aria-label={`Email ${SITE.NAME}`}
-            >
-              <em>Reach out</em>
-            </Link> if you're curious, collaborative, or just love a good challenge.
+            I tinker with LLMs, agentic systems and the software around them.
           </p>
         </article>
       </section>
