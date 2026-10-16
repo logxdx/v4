@@ -6,10 +6,19 @@ type Props = {
   fontSize: number;
   fontWeight?: number;
   delay?: number;
+  // "mount" draws on load; "scroll" waits until the text scrolls into view.
+  trigger?: "mount" | "scroll";
   className?: string;
 };
 
-export default function StrokeHeading({ text, fontSize, fontWeight = 600, delay = 0, className = "" }: Props) {
+export default function StrokeHeading({
+  text,
+  fontSize,
+  fontWeight = 600,
+  delay = 0,
+  trigger = "mount",
+  className = "",
+}: Props) {
   const dark = useTheme() === "dark";
 
   return (
@@ -24,6 +33,7 @@ export default function StrokeHeading({ text, fontSize, fontWeight = 600, delay 
       drawDuration={1.4}
       fillDelay={0.15 + delay}
       stagger={0.035}
+      trigger={trigger}
       hoverRedraw
       className={`[&>svg]:mx-0 ${className}`}
     />
