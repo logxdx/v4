@@ -8,8 +8,9 @@ type Props = {
 
 export default function SpotlightLink({ children }: Props) {
   const theme = useTheme();
-  const dark = theme === "dark";
 
+  // Surface and border come from CSS (global.css) so the server-rendered card
+  // already matches the theme before it hydrates.
   return (
     <SpotlightCard
       theme={theme}
@@ -20,8 +21,8 @@ export default function SpotlightLink({ children }: Props) {
       proximity={60}
       style={
         {
-          "--spotlight-card-surface": dark ? "rgba(16, 16, 16, 0.6)" : "rgba(242, 240, 229, 0.7)",
-          "--spotlight-card-border": dark ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.15)",
+          "--spotlight-card-surface": "var(--card-surface)",
+          "--spotlight-card-border": "var(--card-border)",
           "--spotlight-card-shadow": "none",
         } as CSSProperties
       }

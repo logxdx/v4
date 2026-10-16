@@ -5,10 +5,14 @@
 html {
   overflow-y: scroll;
   color-scheme: light;
+  --card-surface: rgba(242, 240, 229, 0.7);
+  --card-border: rgba(0, 0, 0, 0.15);
 }
 
 html.dark {
   color-scheme: dark;
+  --card-surface: rgba(16, 16, 16, 0.6);
+  --card-border: rgba(255, 255, 255, 0.2);
 }
 
 html,
