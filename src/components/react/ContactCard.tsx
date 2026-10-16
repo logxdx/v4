@@ -5,12 +5,12 @@ type Props = {
   name: string;
   title: string;
   handle: string;
+  handleUrl: string;
   email: string;
 };
 
-// Until there's a portrait, the card shows the brushstroke K monogram from the favicon,
-// with the same K tiled as the holographic foil pattern.
-export default function ContactCard({ name, title, handle, email }: Props) {
+// The portrait is a smiling line-drawn figure, with a tiny smiley tiled as the holographic foil pattern.
+export default function ContactCard({ name, title, handle, handleUrl, email }: Props) {
   const theme = useTheme();
   const dark = theme === "dark";
 
@@ -19,17 +19,17 @@ export default function ContactCard({ name, title, handle, email }: Props) {
       name={name}
       title={title}
       handle={handle}
-      status="Open to ideas"
-      statusColor="#a8a397"
+      handleUrl={handleUrl}
+      status=""
       contactText="Say hi"
       onContactClick={() => {
         window.location.href = `mailto:${email}`;
       }}
-      avatarUrl={dark ? "/profile/k-mark-dark.png" : "/profile/k-mark-light.png"}
-      iconUrl="/profile/k-pattern.png"
+      avatarUrl={dark ? "/profile/figure-dark.svg" : "/profile/figure-light.svg"}
+      iconUrl="/profile/smile-pattern.svg"
       backdropColor={dark ? "#1c1b18" : "#E2E0D4"}
       theme={theme}
-      holo={0.6}
+      holo={dark ? 0.6 : 0.4}
       glare={0.4}
       tiltStrength={10}
       parallax={6}

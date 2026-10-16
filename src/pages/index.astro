@@ -130,7 +130,7 @@ const work = await Promise.all(
         </article>
         <ul class="flex flex-wrap gap-2">
           {
-            SOCIALS.map((SOCIAL) => (
+            SOCIALS.map((SOCIAL, i) => (
               <li class="flex gap-x-2 text-nowrap">
                 <Link
                   href={SOCIAL.HREF}
@@ -139,18 +139,10 @@ const work = await Promise.all(
                 >
                   {SOCIAL.NAME}
                 </Link>
-                {"/"}
+                {i < SOCIALS.length - 1 && "/"}
               </li>
             ))
           }
-          <li class="flex gap-x-2 text-nowrap">
-            <Link
-              href={`mailto:${SITE.EMAIL}`}
-              aria-label={`Email ${SITE.NAME}`}
-            >
-              {SITE.EMAIL}
-            </Link>
-          </li>
         </ul>
         </div>
         <div class="w-full max-w-[280px] sm:max-w-none">
@@ -159,6 +151,7 @@ const work = await Promise.all(
             name={SITE.NAME}
             title="Research Engineer"
             handle="logxdx"
+            handleUrl={SOCIALS.find((social) => social.NAME === "github")?.HREF ?? "https://github.com/logxdx"}
             email={SITE.EMAIL}
           />
         </div>

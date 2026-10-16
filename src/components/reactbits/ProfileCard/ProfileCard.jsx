@@ -73,6 +73,8 @@ const ProfileCard = ({
   name = 'Javi A. Torres',
   title = 'Software Engineer',
   handle = 'javicodes',
+  // Local addition: when set, the handle links here (opens in a new tab).
+  handleUrl,
   status = 'Online',
   statusColor = '#22c55e',
   contactText = 'Contact',
@@ -342,7 +344,14 @@ const ProfileCard = ({
               </span>
             )}
             <div className="profile-card__meta">
-              {handle && <span className="profile-card__handle">@{handle}</span>}
+              {handle &&
+                (handleUrl ? (
+                  <a className="profile-card__handle" href={handleUrl} target="_blank" rel="noopener noreferrer">
+                    @{handle}
+                  </a>
+                ) : (
+                  <span className="profile-card__handle">@{handle}</span>
+                ))}
               {status && <span className="profile-card__status">{status}</span>}
             </div>
             {contactText && (

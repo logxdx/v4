@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" fill="none" stroke="#e8e5d8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+  <!-- head -->
+  <circle cx="200" cy="170" r="58"/>
+  <!-- hair tuft -->
+  <path d="M176 116c10-14 30-18 44-8"/>
+  <!-- happy closed eyes -->
+  <path d="M170 168c6-9 18-9 24 0"/>
+  <path d="M206 168c6-9 18-9 24 0"/>
+  <!-- smile -->
+  <path d="M176 192c12 18 36 18 48 0"/>
+  <!-- neck -->
+  <path d="M188 226l-4 40"/>
+  <path d="M212 226l4 40"/>
+  <!-- collar -->
+  <path d="M170 268c18 16 42 16 60 0"/>
+  <!-- shoulders and torso -->
+  <path d="M98 500c2-128 40-220 72-232"/>
+  <path d="M230 268c28 8 52 44 62 92"/>
+  <path d="M300 500c0-36-2-70-6-100"/>
+  <!-- waving arm and hand -->
+  <path d="M292 360c22-34 34-70 36-102"/>
+  <ellipse cx="332" cy="232" rx="15" ry="20" transform="rotate(14 332 232)"/>
+  <!-- wave motion -->
+  <path d="M368 188c10 12 12 28 4 42" stroke-width="5"/>
+  <path d="M384 176c14 18 16 42 4 62" stroke-width="5"/>
+</svg>

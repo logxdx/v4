@@ -47,6 +47,12 @@ html.dark .profile-card {
   --pc-frame: rgba(28, 27, 24, 0.72) !important;
   --pc-tile: linear-gradient(180deg, #2a2925 0%, #1c1b18 100%) !important;
 }
+a.profile-card__handle {
+  @apply underline decoration-transparent underline-offset-2 transition-colors duration-300 ease-in-out;
+}
+a.profile-card__handle:hover {
+  @apply decoration-current;
+}
 
 /* The liquid-glass pill (GlassBar) supplies the bar's surface. */
 header {

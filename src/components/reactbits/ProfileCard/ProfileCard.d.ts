@@ -8,6 +8,8 @@ export interface ProfileCardProps {
   name?: string;
   title?: string;
   handle?: string;
+  /** Local addition: link for the handle. */
+  handleUrl?: string;
   status?: string;
   statusColor?: string;
   contactText?: string;
