@@ -2,7 +2,7 @@
 import Head from "@components/Head.astro";
 import Header from "@components/Header.astro";
 import Footer from "@components/Footer.astro";
-import Background from "@components/react/Background";
+import ClickSparkLayer from "@components/react/ClickSparkLayer";
 import { SITE } from "@consts";
 
 type Props = {
@@ -19,7 +19,7 @@ const { title, description } = Astro.props;
     <Head title={`${SITE.NAME}`} description={description} />
   </head>
   <body>
-    <Background client:only="react" transition:persist="background" />
+    <ClickSparkLayer client:only="react" transition:persist="click-spark" />
     <Header />
     <main>
       <slot />
