@@ -24,7 +24,7 @@ function SparkLayer({ theme }: { theme: Theme }) {
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-[60]">
-      <ClickSpark ref={ref} sparkColor={PALETTE[theme].ink} sparkSize={12} sparkRadius={22} sparkCount={10} />
+      <ClickSpark ref={ref} sparkColor={PALETTE[theme].high} sparkSize={7} sparkRadius={14} sparkCount={8} sparkWidth={1} />
     </div>
   );
 }

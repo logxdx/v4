@@ -110,23 +110,15 @@ const { title, description, image = "/nano.png" } = Astro.props;
     const backToPrev = document.getElementById("back-to-prev");
     backToPrev?.addEventListener("click", () => window.history.back());
 
-    const lightThemeButton = document.getElementById("light-theme-button");
-    lightThemeButton?.addEventListener("click", () => {
-      localStorage.setItem("theme", "light");
-      toggleTheme(false);
-    });
-
-    const darkThemeButton = document.getElementById("dark-theme-button");
-    darkThemeButton?.addEventListener("click", () => {
-      localStorage.setItem("theme", "dark");
-      toggleTheme(true);
-    });
-
-    const systemThemeButton = document.getElementById("system-theme-button");
-    systemThemeButton?.addEventListener("click", () => {
-      localStorage.setItem("theme", "system");
-      toggleTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
-    });
+    // Delegated and bound once: init() re-runs after every view transition, and the
+    // button lives inside the hydrated glass bar.
+    if (!window.themeButtonBound) {
+      window.themeButtonBound = true;
+      document.addEventListener("click", (event) => {
+        if (event.target.closest?.("#theme-button")) cycleTheme();
+      });
+    }
+    updateThemeButton();
 
     window
       .matchMedia("(prefers-color-scheme: dark)")
@@ -193,13 +185,38 @@ const { title, description, image = "/nano.png" } = Astro.props;
     document.head.removeChild(css);
   }
 
-  function preloadTheme() {
-    const userTheme = localStorage.theme;
+  const THEME_MODES = ["system", "light", "dark"];
 
-    if (userTheme === "light" || userTheme === "dark") {
-      toggleTheme(userTheme === "dark");
-    } else {
+  function themeMode() {
+    const userTheme = localStorage.theme;
+    return userTheme === "light" || userTheme === "dark" ? userTheme : "system";
+  }
+
+  function cycleTheme() {
+    const next = THEME_MODES[(THEME_MODES.indexOf(themeMode()) + 1) % THEME_MODES.length];
+    localStorage.setItem("theme", next);
+    preloadTheme();
+    updateThemeButton();
+  }
+
+  function updateThemeButton() {
+    const button = document.getElementById("theme-button");
+    if (!button) return;
+    const mode = themeMode();
+    const next = THEME_MODES[(THEME_MODES.indexOf(mode) + 1) % THEME_MODES.length];
+    button.setAttribute("aria-label", `Theme: ${mode}. Switch to ${next}`);
+    button.title = `Theme: ${mode}`;
+  }
+
+  function preloadTheme() {
+    const mode = themeMode();
+    // Drives which icon the theme button shows (see global.css).
+    document.documentElement.dataset.themeMode = mode;
+
+    if (mode === "system") {
       toggleTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
+    } else {
+      toggleTheme(mode === "dark");
     }
   }
 

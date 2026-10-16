@@ -27,6 +27,16 @@ body {
   @apply text-black/50 dark:text-white/50;
 }
 
+/* Theme button shows the icon for the current mode; system is the default before the script runs. */
+#theme-button .theme-icon {
+  display: none;
+}
+html:not([data-theme-mode="light"]):not([data-theme-mode="dark"]) #theme-button .theme-icon[data-mode="system"],
+html[data-theme-mode="light"] #theme-button .theme-icon[data-mode="light"],
+html[data-theme-mode="dark"] #theme-button .theme-icon[data-mode="dark"] {
+  display: block;
+}
+
 /* The liquid-glass pill (GlassBar) supplies the bar's surface. */
 header {
   @apply fixed top-3 left-0 right-0 z-50;
