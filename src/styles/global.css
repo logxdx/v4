@@ -27,10 +27,9 @@ body {
   @apply text-black/50 dark:text-white/50;
 }
 
+/* The liquid-glass pill (GlassBar) supplies the bar's surface. */
 header {
-  @apply fixed top-0 left-0 right-0 z-50 py-5;
-  @apply bg-[#E2E0D4]/75 dark:bg-[#000000]/25;
-  @apply backdrop-blur-sm saturate-200;
+  @apply fixed top-3 left-0 right-0 z-50;
 }
 
 main {

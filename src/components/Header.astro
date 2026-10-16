@@ -1,12 +1,13 @@
 ---
 import Container from "@components/Container.astro";
 import Link from "@components/Link.astro";
+import GlassBar from "@components/react/GlassBar";
 import { SITE } from "@consts";
 ---
 
-<header>
+<header transition:persist="header">
   <Container>
-    <div class="flex flex-wrap gap-y-2 justify-between">
+    <GlassBar client:load>
       <Link href="/" underline={false}>
         <div class="font-semibold">
           {SITE.NAME}
@@ -23,6 +24,6 @@ import { SITE } from "@consts";
         </span>
         <Link href="/thoughts"> thoughts </Link> -->
       </nav>
-    </div>
+    </GlassBar>
   </Container>
 </header>
