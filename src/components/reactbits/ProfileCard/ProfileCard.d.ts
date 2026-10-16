@@ -1,0 +1,31 @@
+// Types for the JavaScript ProfileCard, following the React Bits props table.
+import type { MemoExoticComponent, ReactElement } from "react";
+
+export interface ProfileCardProps {
+  avatarUrl?: string;
+  iconUrl?: string;
+  miniAvatarUrl?: string;
+  name?: string;
+  title?: string;
+  handle?: string;
+  status?: string;
+  statusColor?: string;
+  contactText?: string;
+  showUserInfo?: boolean;
+  onContactClick?: () => void;
+  theme?: "dark" | "light";
+  backdropColor?: string;
+  radius?: number;
+  holo?: number;
+  glare?: number;
+  enableTilt?: boolean;
+  tiltStrength?: number;
+  parallax?: number;
+  enableMobileTilt?: boolean;
+  mobileTiltSensitivity?: number;
+  intro?: boolean;
+  className?: string;
+}
+
+declare const ProfileCard: MemoExoticComponent<(props: ProfileCardProps) => ReactElement>;
+export default ProfileCard;

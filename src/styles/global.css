@@ -37,6 +37,17 @@ html[data-theme-mode="dark"] #theme-button .theme-icon[data-mode="dark"] {
   display: block;
 }
 
+/* Re-tint the React Bits ProfileCard frame and tiles to the site's cream/charcoal.
+   The component sets these as inline custom properties, hence !important. */
+.profile-card {
+  --pc-frame: rgba(226, 224, 212, 0.75) !important;
+  --pc-tile: linear-gradient(180deg, #f7f5ec 0%, #e9e6d9 100%) !important;
+}
+html.dark .profile-card {
+  --pc-frame: rgba(28, 27, 24, 0.72) !important;
+  --pc-tile: linear-gradient(180deg, #2a2925 0%, #1c1b18 100%) !important;
+}
+
 /* The liquid-glass pill (GlassBar) supplies the bar's surface. */
 header {
   @apply fixed top-3 left-0 right-0 z-50;
