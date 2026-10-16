@@ -1,16 +1,13 @@
-import { Suspense, lazy, useEffect, useRef } from "react";
-import type { ClickSparkHandle } from "@components/reactbits/ClickSpark";
-import { useBackground } from "@lib/backgroundStore";
+import { useEffect, useRef } from "react";
+import ClickSpark, { type ClickSparkHandle } from "@components/reactbits/ClickSpark";
+import DotField from "@components/reactbits/DotField";
 import { useTheme, type Theme } from "@lib/useTheme";
-import { BACKGROUNDS, PALETTE } from "./backgrounds";
 
-// A very light blur softens the backgrounds' fine detail so text on top stays legible.
-const BLUR = "blur(1.5px)";
-
-const ClickSpark = lazy(() => import("@components/reactbits/ClickSpark"));
-const Ribbons = lazy(() => import("@components/reactbits/Ribbons"));
-
-const FADE_BOTTOM = "[mask-image:linear-gradient(to_bottom,black_0%,black_45%,transparent_95%)]";
+// Warm neutrals sampled from the site's cream (#F2F0E5) and charcoal (#101010) surfaces.
+const PALETTE = {
+  dark: { low: "#3a3830", high: "#a8a397", ink: "#e8e5d8" },
+  light: { low: "#cfcab8", high: "#6b675c", ink: "#1a1a1a" },
+};
 
 // ClickSpark only listens on its own element, so drive it from window clicks
 // and keep the layer click-through above the page content.
@@ -27,52 +24,35 @@ function SparkLayer({ theme }: { theme: Theme }) {
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-[60]">
-      <ClickSpark
-        ref={ref}
-        sparkColor={PALETTE[theme].ink}
-        sparkSize={12}
-        sparkRadius={22}
-        sparkCount={10}
-      />
+      <ClickSpark ref={ref} sparkColor={PALETTE[theme].ink} sparkSize={12} sparkRadius={22} sparkCount={10} />
     </div>
   );
 }
 
 export default function Background() {
   const theme = useTheme();
-  const { background, clickSpark, ribbons } = useBackground();
-  const option = BACKGROUNDS.find((item) => item.id === background);
+  const palette = PALETTE[theme];
 
   return (
     <>
-      {option && (
-        <div
-          key={option.id}
-          aria-hidden="true"
-          className={`pointer-events-none fixed inset-0 -z-10 ${option.fadeBottom ? FADE_BOTTOM : ""}`}
-          style={{ opacity: option.opacity[theme], filter: BLUR }}
-        >
-          <Suspense fallback={null}>
-            <option.Component {...option.props(theme)} />
-          </Suspense>
-        </div>
-      )}
-      {ribbons && (
-        <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-[55]">
-          <Suspense fallback={null}>
-            <Ribbons
-              thickness={18}
-              colors={[PALETTE[theme].ink, PALETTE[theme].high, PALETTE[theme].mid]}
-              opacity={0.5}
-            />
-          </Suspense>
-        </div>
-      )}
-      {clickSpark && (
-        <Suspense fallback={null}>
-          <SparkLayer theme={theme} />
-        </Suspense>
-      )}
+      {/* Dimmed and very lightly blurred so text on top stays legible. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 -z-10"
+        style={{ opacity: theme === "dark" ? 0.55 : 0.6, filter: "blur(1.5px)" }}
+      >
+        <DotField
+          lightMode={theme === "light"}
+          dotSpacing={16}
+          gradientFrom={palette.low}
+          gradientTo={palette.high}
+          glowColor={palette.ink}
+          glowIntensity={0.5}
+          baseOpacity={0.5}
+          holdToZoom={false}
+        />
+      </div>
+      <SparkLayer theme={theme} />
     </>
   );
 }
