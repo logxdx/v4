@@ -44,9 +44,12 @@ const work = await Promise.all(
         <p class="text-black dark:text-white">
           <StrokeHeading client:load text="Research Engineer" fontSize={24} fontWeight={500} delay={0.5} />
         </p>
-        <article>
+        <article class="space-y-2">
           <p class="animate">
             I tinker with LLMs, agentic systems and the software around them.
+          </p>
+          <p class="animate">
+            Building something with LLMs? Let's make it smarter, or at least faster.
           </p>
         </article>
       </section>
@@ -116,8 +119,9 @@ const work = await Promise.all(
         <h5 class="font-semibold text-black dark:text-white">Connect</h5>
         <article>
           <p>
-            Got a hard problem or a half-baked idea? My
-            <Link href={`mailto:${SITE.EMAIL}`} aria-label={`Email ${SITE.NAME}`}>inbox</Link> is open.
+            Got a hard problem or a half-baked idea?
+            <Link href={`mailto:${SITE.EMAIL}`} aria-label={`Email ${SITE.NAME}`}>Say hi</Link>. I reply
+            faster than my models infer ;)
           </p>
         </article>
         <ul class="flex flex-wrap gap-2">
