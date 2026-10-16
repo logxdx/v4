@@ -4,6 +4,8 @@ import Container from "@components/Container.astro";
 import PageLayout from "@layouts/PageLayout.astro";
 import ArrowCard from "@components/ArrowCard.astro";
 import Link from "@components/Link.astro";
+import BlurText from "@components/reactbits/BlurText";
+import RoleLine from "@components/react/RoleLine";
 import { dateRange } from "@lib/utils";
 import { SITE, HOME, SOCIALS } from "@consts";
 
@@ -35,17 +37,26 @@ const work = await Promise.all(
 
 <PageLayout title={HOME.TITLE} description={HOME.DESCRIPTION}>
   <Container>
-    <h4 class="animate font-semibold text-black dark:text-white">
-      Hi, I'm Karan ! <span class="text-xl">👋🏻</span>
-    </h4>
+    <div
+      role="heading"
+      aria-level="1"
+      class="mb-6 text-3xl sm:text-4xl font-semibold tracking-tight text-black dark:text-white"
+    >
+      <BlurText
+        client:load
+        text="Hi, I'm Karan! 👋🏻"
+        animateBy="words"
+        direction="top"
+        delay={120}
+        trigger="load"
+      />
+    </div>
     <div class="space-y-20">
       <section>
         <article class="space-y-2">
-          <p class="animate">
-            <em><b>Software</b></em> & <em><b>AI Engineer</b></em>,
-            <em><b>mentor</b></em>,
-            <em><b>student</b></em>, <em><b>minimalist</b></em>.
-          </p>
+          <div class="animate">
+            <RoleLine client:load />
+          </div>
           <p class="animate">
             I love to <em><b>analyze, build & break down</b></em> interesting technology.
             <br />
