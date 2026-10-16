@@ -1,0 +1,23 @@
+---
+import PageLayout from "@layouts/PageLayout.astro";
+import Container from "@components/Container.astro";
+import Link from "@components/Link.astro";
+import FuzzyHeading from "@components/react/FuzzyHeading";
+---
+
+<PageLayout title="Not found" description="This page doesn't exist.">
+  <Container>
+    <section class="space-y-6">
+      <h1 class="text-black dark:text-white">
+        <FuzzyHeading client:only="react" text="404" />
+      </h1>
+      <article>
+        <p class="animate">
+          This page wandered off into latent space.
+          <br />
+          <Link href="/">Head back home</Link>.
+        </p>
+      </article>
+    </section>
+  </Container>
+</PageLayout>

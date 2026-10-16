@@ -10,11 +10,11 @@ import { SITE } from "@consts";
   <Container>
     <GlassBar client:load>
       <Link href="/" underline={false}>
-        <div class="font-semibold">
+        <div class="font-semibold whitespace-nowrap">
           {SITE.NAME}
         </div>
       </Link>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3">
         <nav class="flex gap-1">
           <Link href="/projects"> projects </Link>
           <span>

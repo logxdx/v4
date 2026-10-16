@@ -26,7 +26,9 @@ export default function GlassBar({ children }: Props) {
       greenOffset={3}
       blueOffset={6}
     >
-      <div className="flex w-full items-center justify-between gap-4 px-5">{children}</div>
+      <div className="flex w-full items-center justify-between gap-3 px-4 text-sm sm:gap-4 sm:px-5 sm:text-base">
+        {children}
+      </div>
     </GlassSurface>
   );
 }
