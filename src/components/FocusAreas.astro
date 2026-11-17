@@ -1,0 +1,58 @@
+---
+import { getCollection } from "astro:content";
+import SpotlightLink from "@components/react/SpotlightLink";
+import { FOCUS_AREAS } from "@consts";
+
+// Numbered cards for the areas I work in. A card links to the filtered
+// project list once at least one published project is tagged with it.
+const projects = (await getCollection("projects")).filter((p) => !p.data.draft);
+const posts = (await getCollection("blog")).filter((p) => !p.data.draft);
+
+const areas = FOCUS_AREAS.map((area, i) => {
+  const projectCount = projects.filter((p) => p.data.areas.includes(area.slug)).length;
+  const postCount = posts.filter((p) => p.data.areas.includes(area.slug)).length;
+  return {
+    ...area,
+    index: String(i + 1).padStart(2, "0"),
+    projectCount,
+    postCount,
+    href: projectCount > 0 ? `/projects?area=${area.slug}` : undefined,
+  };
+});
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+---
+
+<ul class="grid gap-3 sm:grid-cols-2">
+  {
+    areas.map((area) => {
+      const Tag = area.href ? "a" : "div";
+      const meta = [
+        area.projectCount > 0 && plural(area.projectCount, "project"),
+        area.postCount > 0 && plural(area.postCount, "post"),
+      ].filter(Boolean).join(" · ");
+      return (
+        <li class="h-full">
+          <SpotlightLink client:visible className="h-full">
+            <Tag
+              href={area.href}
+              class:list={[
+                "group flex h-full flex-col gap-1.5 rounded-lg px-4 py-3 transition-colors duration-300 ease-in-out",
+                area.href && "hover:bg-black/5 dark:hover:bg-white/5",
+              ]}
+            >
+              <div class="flex items-baseline justify-between gap-3 font-mono text-xs opacity-75">
+                <span>{area.index}</span>
+                {meta && <span>{meta}</span>}
+              </div>
+              <div class="font-semibold text-black dark:text-white">
+                {area.title}
+              </div>
+              <p class="text-sm">{area.blurb}</p>
+            </Tag>
+          </SpotlightLink>
+        </li>
+      );
+    })
+  }
+</ul>

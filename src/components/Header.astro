@@ -11,7 +11,8 @@ import { SITE } from "@consts";
     <GlassBar client:load>
       <Link href="/" underline={false}>
         <div class="font-semibold whitespace-nowrap">
-          {SITE.NAME}
+          <span class="sm:hidden">{SITE.NAME.split(" ")[0]}</span>
+          <span class="hidden sm:inline">{SITE.NAME}</span>
         </div>
       </Link>
       <div class="flex items-center gap-2 sm:gap-3">
@@ -20,11 +21,11 @@ import { SITE } from "@consts";
           <span>
             {`/`}
           </span>
-          <Link href="/work"> work </Link>
-          <!-- <span>
+          <Link href="/blog"> blog </Link>
+          <span>
             {`/`}
           </span>
-          <Link href="/thoughts"> thoughts </Link> -->
+          <Link href="/work"> work </Link>
         </nav>
         <ThemeButton />
       </div>

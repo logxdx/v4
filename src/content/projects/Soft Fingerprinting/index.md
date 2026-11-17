@@ -4,6 +4,10 @@ description: "A Privacy-Preserving, Deep Learning Approach to Occupancy Detectio
 date: "November 2025"
 repoURL: "https://github.com/logxdx/Occupancy-Estimation-using-Structural-Vibrations"
 # demoURL: ""
+category: "Applied ML · Signals"
+areas: []
+tags: ["Signal processing", "Deep learning", "Edge inference"]
+featured: false
 ---
 
 ## Project Motivation and Overview

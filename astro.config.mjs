@@ -8,6 +8,10 @@ import rehypeKatex from "rehype-katex";
 
 export default defineConfig({
   site: "http://localhost:4321",
+  // The blog used to live at /thoughts.
+  redirects: {
+    "/thoughts": "/blog",
+  },
   markdown: {
     remarkPlugins: [remarkMath],
     rehypePlugins: [rehypeKatex],

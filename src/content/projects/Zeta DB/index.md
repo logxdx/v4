@@ -4,6 +4,10 @@ description: "Multimodal vector database for text-to-image and image-to-image se
 date: "April 2025"
 repoURL: "https://github.com/logxdx/Zeta-DB"
 # demoURL: ""
+category: "Retrieval · Multimodal"
+areas: [rag, knowledge]
+tags: ["CLIP", "jina-clip-v2", "LanceDB", "Vector search"]
+featured: false
 ---
 
 Unlock the true potential of your data with **Zeta DB**, a powerful, Python-based vector database designed to bridge the gap between vision and language. <br> Whether you are building _intelligent image search engines_, _content recommendation systems_, or _AI-driven asset managers_, Zeta DB provides the semantic backbone you need.

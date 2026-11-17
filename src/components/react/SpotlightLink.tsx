@@ -4,9 +4,10 @@ import { useTheme } from "@lib/useTheme";
 
 type Props = {
   children?: ReactNode;
+  className?: string;
 };
 
-export default function SpotlightLink({ children }: Props) {
+export default function SpotlightLink({ children, className }: Props) {
   const theme = useTheme();
 
   // Surface and border come from CSS (global.css) so the server-rendered card
@@ -14,7 +15,7 @@ export default function SpotlightLink({ children }: Props) {
   return (
     <SpotlightCard
       theme={theme}
-      className="!rounded-lg !p-0"
+      className={`!rounded-lg !p-0 ${className ?? ""}`}
       spotlightSize={220}
       intensity={0.2}
       borderGlow={0.8}

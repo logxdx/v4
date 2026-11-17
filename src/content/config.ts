@@ -1,12 +1,17 @@
 import { defineCollection, z } from "astro:content";
+import { AREA_SLUGS } from "../consts";
 
-const thoughts = defineCollection({
+const area = z.enum(AREA_SLUGS);
+
+const blog = defineCollection({
   type: "content",
   schema: z.object({
     title: z.string(),
     description: z.string(),
     date: z.coerce.date(),
-    draft: z.boolean().optional()
+    draft: z.boolean().optional(),
+    areas: z.array(area).default([]),
+    tags: z.array(z.string()).default([]),
   }),
 });
 
@@ -28,8 +33,16 @@ const projects = defineCollection({
     date: z.coerce.date(),
     draft: z.boolean().optional(),
     demoURL: z.string().optional(),
-    repoURL: z.string().optional()
+    repoURL: z.string().optional(),
+    // Short label shown above the title on cards, e.g. "RAG · Vision".
+    category: z.string().optional(),
+    // Focus areas this project belongs to; drives the /projects filter.
+    areas: z.array(area).default([]),
+    // Stack / technique chips shown on the project page.
+    tags: z.array(z.string()).default([]),
+    // Pinned to the top of the homepage list.
+    featured: z.boolean().default(false),
   }),
 });
 
-export const collections = { thoughts, work, projects };
+export const collections = { blog, work, projects };

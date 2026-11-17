@@ -3,28 +3,105 @@ import { getCollection } from "astro:content";
 import PageLayout from "@layouts/PageLayout.astro";
 import Container from "@components/Container.astro";
 import ArrowCard from "@components/ArrowCard.astro";
-import { PROJECTS } from "@consts";
+import { PROJECTS, FOCUS_AREAS } from "@consts";
 
 const projects = (await getCollection("projects"))
   .filter(project => !project.data.draft)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// One chip per focus area that has at least one project.
+const filters = FOCUS_AREAS
+  .map((area) => ({
+    ...area,
+    count: projects.filter((p) => p.data.areas.includes(area.slug)).length,
+  }))
+  .filter((area) => area.count > 0);
 ---
 
 <PageLayout title={PROJECTS.TITLE} description={PROJECTS.DESCRIPTION}>
   <Container>
     <div class="space-y-10">
-      <div class="animate font-mono font-semibold text-black dark:text-white">
-        Projects
+      <div class="animate space-y-2">
+        <h1 class="font-mono font-semibold text-black dark:text-white">
+          Projects
+        </h1>
+        <p>{PROJECTS.DESCRIPTION}</p>
       </div>
-      <ul class="animate flex flex-col gap-4">
+
+      <div class="animate flex flex-wrap gap-2" role="group" aria-label="Filter projects by area" data-project-filters>
+        <button type="button" class="filter-chip" data-area="" aria-pressed="true">
+          All <span class="opacity-60">{projects.length}</span>
+        </button>
+        {filters.map((area) => (
+          <button type="button" class="filter-chip" data-area={area.slug} aria-pressed="false">
+            {area.short} <span class="opacity-60">{area.count}</span>
+          </button>
+        ))}
+      </div>
+
+      <ul class="animate flex flex-col gap-4" data-project-list>
         {
           projects.map((project) => (
-            <li>
+            <li data-areas={project.data.areas.join(" ")}>
               <ArrowCard entry={project}/>
             </li>
           ))
         }
       </ul>
+      <p class="hidden text-sm" data-project-empty>
+        Nothing public in this area yet. It's in progress.
+      </p>
     </div>
   </Container>
 </PageLayout>
+
+<style>
+  .filter-chip {
+    @apply rounded-full border border-black/15 px-3 py-1 font-mono text-xs transition-colors duration-300 ease-in-out;
+    @apply hover:bg-black/5 hover:text-black dark:border-white/20 dark:hover:bg-white/5 dark:hover:text-white;
+  }
+  .filter-chip[aria-pressed="true"] {
+    @apply border-black bg-black text-white dark:border-white dark:bg-white dark:text-black;
+  }
+</style>
+
+<script>
+  // Filters the list by ?area=<slug>. Runs on every client-side navigation.
+  function initProjectFilters() {
+    const bar = document.querySelector<HTMLElement>("[data-project-filters]");
+    const list = document.querySelector<HTMLElement>("[data-project-list]");
+    const empty = document.querySelector<HTMLElement>("[data-project-empty]");
+    if (!bar || !list || !empty) return;
+
+    const chips = Array.from(bar.querySelectorAll<HTMLButtonElement>("button[data-area]"));
+    const items = Array.from(list.querySelectorAll<HTMLLIElement>("li[data-areas]"));
+
+    const apply = (area: string) => {
+      let shown = 0;
+      for (const item of items) {
+        const match = !area || (item.dataset.areas ?? "").split(" ").includes(area);
+        item.hidden = !match;
+        if (match) shown++;
+      }
+      for (const chip of chips) {
+        chip.setAttribute("aria-pressed", String(chip.dataset.area === area));
+      }
+      empty.classList.toggle("hidden", shown > 0);
+    };
+
+    for (const chip of chips) {
+      chip.addEventListener("click", () => {
+        const area = chip.dataset.area ?? "";
+        const url = new URL(window.location.href);
+        if (area) url.searchParams.set("area", area);
+        else url.searchParams.delete("area");
+        history.replaceState(history.state, "", url);
+        apply(area);
+      });
+    }
+
+    apply(new URL(window.location.href).searchParams.get("area") ?? "");
+  }
+
+  document.addEventListener("astro:page-load", initProjectFilters);
+</script>

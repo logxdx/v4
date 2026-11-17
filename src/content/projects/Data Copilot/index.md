@@ -4,6 +4,10 @@ description: "The Terminal-First Data Science Copilot"
 date: "October 2025"
 repoURL: "https://github.com/logxdx/Data-Pilot"
 # demoURL: ""
+category: "Agents · Data science"
+areas: [agents, decision]
+tags: ["openai-agents", "Code execution", "Sandboxing", "Rich TUI"]
+featured: true
 ---
 
 **Turn your command line into an intelligent data analysis studio.**

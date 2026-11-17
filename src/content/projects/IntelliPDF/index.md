@@ -4,6 +4,10 @@ description: "Next-Gen PDF Search with Visual Late Interaction"
 date: "August 2025"
 repoURL: "https://github.com/logxdx/contextualized-late-interation-with-pdfs"
 # demoURL: ""
+category: "RAG · Vision"
+areas: [rag, knowledge]
+tags: ["Late interaction", "ColQwen", "Qdrant", "LiteLLM", "Streamlit"]
+featured: true
 ---
 
 **IntelliPDF** is a high-performance **Retrieval-Augmented Generation (RAG)** pipeline designed to unlock the visual and textual context of PDF documents. 
