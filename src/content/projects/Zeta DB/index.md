@@ -2,7 +2,7 @@
 title: "Zeta DB"
 description: "Multimodal vector database for text-to-image and image-to-image search."
 date: "April 2025"
-repoURL: "https://github.com/logxdx/Zeta-DB"
+repoURL: "https://github.com/logxdx/ZetaDB"
 # demoURL: ""
 category: "Retrieval · Multimodal"
 areas: [rag, knowledge]
