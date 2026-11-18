@@ -1,0 +1,79 @@
+---
+import { type CollectionEntry, getCollection } from "astro:content";
+import { isVisible } from "@lib/content";
+import PageLayout from "@layouts/PageLayout.astro";
+import Container from "@components/Container.astro";
+import ArrowCard from "@components/ArrowCard.astro";
+import AreaFilter from "@components/AreaFilter.astro";
+import Link from "@components/Link.astro";
+import { BLOG, FOCUS_AREAS } from "@consts";
+
+const data = (await getCollection("blog"))
+  .filter(isVisible)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+type Acc = {
+  [year: string]: CollectionEntry<"blog">[];
+}
+
+const posts = data.reduce((acc: Acc, post) => {
+    const year = post.data.date.getFullYear().toString();
+    if (!acc[year]) {
+      acc[year] = [];
+    }
+    acc[year].push(post);
+    return acc;
+  }, {});
+
+const years = Object.keys(posts).sort((a, b) => parseInt(b) - parseInt(a));
+const topics = FOCUS_AREAS.map((area) => area.title).join(", ");
+---
+
+<PageLayout title={BLOG.TITLE} description={BLOG.DESCRIPTION}>
+  <Container>
+    <div class="space-y-10">
+      <div class="animate space-y-2">
+        <h1 class="font-mono font-semibold text-black dark:text-white">
+          Blog
+        </h1>
+        <p>{BLOG.DESCRIPTION}</p>
+      </div>
+      {years.length === 0 ? (
+        <div class="animate space-y-2 text-sm">
+          <p>The first posts are being written. Expect notes on {topics}.</p>
+          <p>
+            Until then, the <Link href="/projects">projects</Link> say most of it,
+            or grab the <Link href="/rss.xml">RSS feed</Link>.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div class="animate">
+            <AreaFilter entries={data} label="Filter posts by area" />
+          </div>
+          <div class="space-y-4">
+            {years.map(year => (
+              <section class="animate space-y-4" data-area-group>
+                <div class="font-mono font-semibold text-black dark:text-white">
+                  {year}
+                </div>
+                <ul class="flex flex-col gap-4">
+                  {
+                    posts[year].map((post) => (
+                      <li data-areas={post.data.areas.join(" ")}>
+                        <ArrowCard entry={post}/>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </section>
+            ))}
+          </div>
+          <p class="hidden text-sm" data-area-empty>
+            No posts in this area yet.
+          </p>
+        </>
+      )}
+    </div>
+  </Container>
+</PageLayout>

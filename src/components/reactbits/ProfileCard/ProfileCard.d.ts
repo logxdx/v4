@@ -1,7 +1,9 @@
 // Types for the JavaScript ProfileCard, following the React Bits props table.
-import type { MemoExoticComponent, ReactElement } from "react";
+import type { MemoExoticComponent, ReactElement, ReactNode } from "react";
 
 export interface ProfileCardProps {
+  /** Local addition: a React element rendered in place of the avatar image. */
+  avatar?: ReactNode;
   avatarUrl?: string;
   iconUrl?: string;
   miniAvatarUrl?: string;

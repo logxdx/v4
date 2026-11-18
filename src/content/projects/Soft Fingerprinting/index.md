@@ -2,8 +2,13 @@
 title: "Occupancy Estimation using Structural Vibrations"
 description: "A Privacy-Preserving, Deep Learning Approach to Occupancy Detection"
 date: "November 2025"
-repoURL: "https://github.com/logxdx/Occupancy-Estimation-using-Structural-Vibrations"
+# Repo is private on GitHub (404 for visitors); restore this line if it is made public again.
+# repoURL: "https://github.com/logxdx/Occupancy-Estimation-using-Structural-Vibrations"
 # demoURL: ""
+category: "Applied ML · Signals"
+areas: []
+tags: ["Signal processing", "Deep learning", "Edge inference"]
+featured: false
 ---
 
 ## Project Motivation and Overview

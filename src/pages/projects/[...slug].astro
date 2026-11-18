@@ -1,15 +1,17 @@
 ---
-import { type CollectionEntry, getCollection } from "astro:content";
+import { type CollectionEntry, getCollection, getEntry } from "astro:content";
+import { isVisible } from "@lib/content";
 import PageLayout from "@layouts/PageLayout.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import { readingTime } from "@lib/utils";
 import BackToPrev from "@components/BackToPrev.astro";
 import Link from "@components/Link.astro";
+import TagList from "@components/TagList.astro";
 
 export async function getStaticPaths() {
   const projects = (await getCollection("projects"))
-    .filter(post => !post.data.draft)
+    .filter(isVisible)
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
   return projects.map((project) => ({
     params: { slug: project.slug },
@@ -20,6 +22,15 @@ type Props = CollectionEntry<"projects">;
 
 const project = Astro.props;
 const { Content } = await project.render();
+
+// Only link the write-up once it's published (or on the dev server).
+const writeup = project.data.writeup ? await getEntry(project.data.writeup) : undefined;
+const writeupHref = writeup && isVisible(writeup) ? `/blog/${writeup.slug}` : undefined;
+const links = [
+  writeupHref && { href: writeupHref, label: "write-up", external: false },
+  project.data.demoURL && { href: project.data.demoURL, label: "demo", external: true },
+  project.data.repoURL && { href: project.data.repoURL, label: "repo", external: true },
+].filter((link): link is { href: string; label: string; external: boolean } => Boolean(link));
 ---
 
 <PageLayout title={project.data.title} description={project.data.description}>
@@ -30,6 +41,11 @@ const { Content } = await project.render();
       </BackToPrev>
     </div>
     <div class="space-y-1 my-10">
+      {project.data.category && (
+        <div class="animate font-mono text-xs opacity-75">
+          {project.data.category}
+        </div>
+      )}
       <div class="animate flex items-center gap-1.5">
         <div class="font-base text-sm">
           <FormattedDate date={project.data.date} />
@@ -42,22 +58,22 @@ const { Content } = await project.render();
       <div class="animate text-2xl font-semibold text-black dark:text-white">
         {project.data.title}
       </div>
-      {(project.data.demoURL || project.data.repoURL) && (
+      {links.length > 0 && (
         <nav class="animate flex gap-1">
-          {project.data.demoURL && (
-            <Link href={project.data.demoURL} external>
-              demo
-            </Link>
-          )}
-          {project.data.demoURL && project.data.repoURL && (
-            <span>/</span>
-          )}
-          {project.data.repoURL && (
-            <Link href={project.data.repoURL} external>
-              repo
-            </Link>
-          )}
+          {links.map((link, i) => (
+            <>
+              {i > 0 && <span>/</span>}
+              <Link href={link.href} external={link.external}>
+                {link.label}
+              </Link>
+            </>
+          ))}
         </nav>
+      )}
+      {project.data.tags.length > 0 && (
+        <div class="animate pt-3">
+          <TagList tags={project.data.tags} />
+        </div>
       )}
     </div>
     <article class="animate">

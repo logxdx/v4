@@ -4,6 +4,10 @@ description: "Deep-CNN model for multi-class bird species classification."
 date: "October 2024"
 repoURL: "https://github.com/logxdx/Bird-Species-Classification"
 # demoURL: ""
+category: "Vision · CNN"
+areas: []
+tags: ["CNN", "Residual networks", "Class activation maps"]
+featured: false
 ---
 <!-- ![Bird Species Classification CAM Visualization](/bird-cnn.jpg) -->
 

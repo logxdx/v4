@@ -15,3 +15,11 @@ export type Socials = {
   NAME: string;
   HREF: string;
 }[];
+
+
+export type FocusArea = {
+  slug: (typeof import("./consts").AREA_SLUGS)[number];
+  title: string;
+  short: string;
+  blurb: string;
+};

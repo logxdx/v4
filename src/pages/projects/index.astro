@@ -1,30 +1,45 @@
 ---
 import { getCollection } from "astro:content";
+import { isVisible } from "@lib/content";
 import PageLayout from "@layouts/PageLayout.astro";
 import Container from "@components/Container.astro";
 import ArrowCard from "@components/ArrowCard.astro";
+import AreaFilter from "@components/AreaFilter.astro";
+import Link from "@components/Link.astro";
 import { PROJECTS } from "@consts";
 
 const projects = (await getCollection("projects"))
-  .filter(project => !project.data.draft)
+  .filter(isVisible)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
 
 <PageLayout title={PROJECTS.TITLE} description={PROJECTS.DESCRIPTION}>
   <Container>
     <div class="space-y-10">
-      <div class="animate font-mono font-semibold text-black dark:text-white">
-        Projects
+      <div class="animate space-y-2">
+        <h1 class="font-mono font-semibold text-black dark:text-white">
+          Projects
+        </h1>
+        <p>{PROJECTS.DESCRIPTION}</p>
       </div>
+
+      <div class="animate">
+        <AreaFilter entries={projects} label="Filter projects by area" />
+      </div>
+
       <ul class="animate flex flex-col gap-4">
         {
           projects.map((project) => (
-            <li>
+            <li data-areas={project.data.areas.join(" ")}>
               <ArrowCard entry={project}/>
             </li>
           ))
         }
       </ul>
+      <p class="hidden text-sm" data-area-empty>
+        No projects in this area yet. My RL and fine-tuning work lives on
+        the <Link href="/blog">blog</Link>.
+      </p>
     </div>
   </Container>
 </PageLayout>

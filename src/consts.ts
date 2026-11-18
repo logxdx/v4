@@ -1,4 +1,4 @@
-import type { Site, Metadata, Socials } from "@types";
+import type { Site, Metadata, Socials, FocusArea } from "@types";
 
 export const SITE: Site = {
   NAME: "Karan Deo Burnwal",
@@ -14,8 +14,8 @@ export const HOME: Metadata = {
 };
 
 export const BLOG: Metadata = {
-  TITLE: "Thoughts",
-  DESCRIPTION: "Articulation of my mind",
+  TITLE: "Blog",
+  DESCRIPTION: "Notes on retrieval, agents, RL and fine-tuning: what worked, what broke, and why.",
 };
 
 export const WORK: Metadata = {
@@ -25,8 +25,39 @@ export const WORK: Metadata = {
 
 export const PROJECTS: Metadata = {
   TITLE: "Projects",
-  DESCRIPTION: "A collection of my projects, with links to repositories and demos.",
+  DESCRIPTION: "Things I've built across RAG, agents, knowledge systems and applied ML.",
 };
+
+// Slugs that projects and posts list under `areas`; also the /projects?area=<slug> filter.
+export const AREA_SLUGS = ["rag", "agents", "decision", "training"] as const;
+
+// The areas I work in, in display order.
+export const FOCUS_AREAS: FocusArea[] = [
+  {
+    slug: "rag",
+    title: "RAG & Knowledge Systems",
+    short: "RAG & Knowledge",
+    blurb: "Search and RAG over real documents, images and media.",
+  },
+  {
+    slug: "agents",
+    title: "Agentic Systems",
+    short: "Agents",
+    blurb: "Agents that plan, call tools and run code safely.",
+  },
+  {
+    slug: "decision",
+    title: "Decision Intelligence",
+    short: "Decisions",
+    blurb: "Small, fast models that make a call and say how sure they are.",
+  },
+  {
+    slug: "training",
+    title: "Fine-tuning & RL",
+    short: "Fine-tuning & RL",
+    blurb: "Adapting open models with SFT, LoRA and reinforcement learning.",
+  },
+];
 
 export const SOCIALS: Socials = [
   {

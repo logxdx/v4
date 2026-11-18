@@ -67,6 +67,8 @@ const isDark = color => {
 };
 
 const ProfileCard = ({
+  // Local addition: a React element rendered in place of the avatar image.
+  avatar,
   avatarUrl = '',
   iconUrl,
   miniAvatarUrl,
@@ -321,8 +323,12 @@ const ProfileCard = ({
             <span className="profile-card__holo-glow" />
             <span className="profile-card__holo-shift" />
           </span>
-          {avatarUrl && (
-            <img className="profile-card__photo" src={avatarUrl} alt={name || ''} loading="lazy" draggable={false} />
+          {avatar ? (
+            <div className="profile-card__photo profile-card__photo--node">{avatar}</div>
+          ) : (
+            avatarUrl && (
+              <img className="profile-card__photo" src={avatarUrl} alt={name || ''} loading="lazy" draggable={false} />
+            )
           )}
           {(name || title) && (
             <>

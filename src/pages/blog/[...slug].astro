@@ -1,0 +1,96 @@
+---
+import { type CollectionEntry, getCollection, getEntry } from "astro:content";
+import { isVisible } from "@lib/content";
+import PageLayout from "@layouts/PageLayout.astro";
+import Container from "@components/Container.astro";
+import FormattedDate from "@components/FormattedDate.astro";
+import TagList from "@components/TagList.astro";
+import { readingTime } from "@lib/utils";
+import BackToPrev from "@components/BackToPrev.astro";
+import Link from "@components/Link.astro";
+import { FOCUS_AREAS } from "@consts";
+
+export async function getStaticPaths() {
+  const posts = (await getCollection("blog"))
+    .filter(isVisible)
+    .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: post,
+  }));
+}
+type Props = CollectionEntry<"blog">;
+
+const post = Astro.props;
+const { Content } = await post.render();
+
+// Projects whose `writeup` points at this post.
+const projects = [];
+for (const p of await getCollection("projects")) {
+  if (!isVisible(p) || !p.data.writeup) continue;
+  const target = await getEntry(p.data.writeup);
+  if (target?.slug === post.slug) projects.push(p);
+}
+
+const areaLabel = [
+  ...FOCUS_AREAS.filter((area) => post.data.areas.includes(area.slug)).map((area) => area.title),
+  ...(post.data.experiment ? ["Personal experiment"] : []),
+].join(" · ");
+---
+
+<PageLayout title={post.data.title} description={post.data.description}>
+  <Container>
+    <div class="animate">
+      <BackToPrev href="/blog">
+        Back to blog
+      </BackToPrev>
+    </div>
+    <div class="space-y-1 my-10">
+      {(areaLabel || post.data.draft) && (
+        <div class="animate flex items-center gap-1.5 font-mono text-xs">
+          {post.data.draft && <span class="rounded bg-black/10 px-1.5 text-black dark:bg-white/15 dark:text-white">Draft</span>}
+          <span class="opacity-75">{areaLabel}</span>
+        </div>
+      )}
+      <div class="animate flex items-center gap-1.5">
+        <div class="font-base text-sm">
+          <FormattedDate date={post.data.date} />
+        </div>
+        {post.data.updated && (
+          <>
+            &bull;
+            <div class="font-base text-sm">
+              Updated <FormattedDate date={post.data.updated} />
+            </div>
+          </>
+        )}
+        &bull;
+        <div class="font-base text-sm">
+          {readingTime(post.body)}
+        </div>
+      </div>
+      <h1 class="animate text-2xl font-semibold text-black dark:text-white">
+        {post.data.title}
+      </h1>
+      {projects.length > 0 && (
+        <nav class="animate flex flex-wrap gap-1 text-sm">
+          <span>Write-up of</span>
+          {projects.map((p, i) => (
+            <>
+              {i > 0 && <span>/</span>}
+              <Link href={`/projects/${p.slug}`}>{p.data.title}</Link>
+            </>
+          ))}
+        </nav>
+      )}
+      {post.data.tags.length > 0 && (
+        <div class="animate pt-3">
+          <TagList tags={post.data.tags} />
+        </div>
+      )}
+    </div>
+    <article class="animate">
+      <Content />
+    </article>
+  </Container>
+</PageLayout>
