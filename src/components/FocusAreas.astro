@@ -3,8 +3,11 @@ import { getCollection } from "astro:content";
 import { isVisible } from "@lib/content";
 import { FOCUS_AREAS } from "@consts";
 
-// A bulleted list of the areas I work in, each followed by links to the
-// projects and posts tagged with it: "Area (Project, Post, ...)".
+// A bulleted list of the areas I work in, each followed by a few links:
+// "Area (Project, Post)". At most MAX_LINKS per area, projects before posts,
+// newest first, and each project or post is listed under one area only.
+const MAX_LINKS = 2;
+
 const projects = (await getCollection("projects"))
   .filter(isVisible)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
@@ -12,16 +15,22 @@ const posts = (await getCollection("blog"))
   .filter(isVisible)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-const areas = FOCUS_AREAS.map((area) => ({
-  ...area,
-  links: [...projects, ...posts]
+const used = new Set<string>();
+const areas = FOCUS_AREAS.map((area) => {
+  const entries = [...projects, ...posts]
     .filter((entry) => entry.data.areas.includes(area.slug))
-    .map((entry) => ({
+    .filter((entry) => !used.has(`${entry.collection}/${entry.slug}`))
+    .slice(0, MAX_LINKS);
+  entries.forEach((entry) => used.add(`${entry.collection}/${entry.slug}`));
+  return {
+    ...area,
+    links: entries.map((entry) => ({
       href: `/${entry.collection}/${entry.slug}`,
       label: entry.data.short ?? entry.data.title,
       title: entry.data.title,
     })),
-}));
+  };
+});
 ---
 
 <ul class="list-disc space-y-2 pl-5 marker:text-black/30 dark:marker:text-white/30">
@@ -31,7 +40,7 @@ const areas = FOCUS_AREAS.map((area) => ({
         <span class="text-black dark:text-white">{area.title}</span>
         {/* Kept on single lines: line breaks between JSX pieces render as spaces. */}
         {area.links.length > 0 && (
-          <span> ({area.links.map((link, i) => (<>{i > 0 && ", "}<a href={link.href} title={link.title} class="area-link">{link.label}</a></>))})</span>
+          <span class="text-sm"> ({area.links.map((link, i) => (<>{i > 0 && ", "}<a href={link.href} title={link.title} class="area-link">{link.label}</a></>))})</span>
         )}
       </li>
     ))
