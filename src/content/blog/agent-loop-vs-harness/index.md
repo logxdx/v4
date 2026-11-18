@@ -3,7 +3,6 @@ title: "The loop is seven lines; the harness is everything else"
 short: "Loop vs harness"
 description: "What an agent harness adds around the simple agent loop, and which failure each piece prevents."
 date: "2026-09-28"
-draft: true
 areas: [agents]
 tags: ["Agent harness", "Tool calling", "Checkpointing", "Prompt caching", "Sandboxing"]
 experiment: false
@@ -176,7 +175,7 @@ Treat truncation as failure. A response that hit the output-token limit may carr
 
 Check budgets before each model call. An alert that fires after the money is spent is only a report. It can't stop anything.
 
-And remember that a turn cap doesn't bound cost. This one surprised me the most, so here's the maths.
+And remember that a turn cap doesn't bound cost. This one is easy to miss, so here's the maths.
 
 The model is stateless. It remembers nothing between calls, so every turn resends the whole transcript so far. You pay for every token you send, and a token is a small chunk of text, often a short word.
 

@@ -3,7 +3,6 @@ title: "Every RL method for LLMs is the same policy gradient"
 short: "One policy gradient"
 description: "How REINFORCE, PPO, GRPO, DAPO, GSPO and CISPO all come from one policy-gradient formula, with each method changing one small piece of it."
 date: "2026-10-21"
-draft: true
 areas: [training]
 tags: ["REINFORCE", "PPO", "GRPO", "DAPO", "GSPO", "CISPO"]
 experiment: false
@@ -276,7 +275,7 @@ Token-level loss changes the normaliser to $1/\sum_i |o_i|$, one over the total 
 
 Overlong shaping fixes the reward. A response that hits the length cap gets cut off, so its reward is noisy. DAPO masks those truncated responses, then adds a soft length penalty in a buffer zone just before the hard cap.
 
-DAPO also drops the KL term entirely. Coming from RLHF, that looked like heresy to me at first.
+DAPO also drops the KL term entirely. That's a big change from RLHF, where the KL term is what keeps the model close to the reference.
 
 The reason is that a verifier is much harder to hack than a learned reward model. With a verifier, the leash matters less.
 

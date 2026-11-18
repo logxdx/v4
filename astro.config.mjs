@@ -7,7 +7,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 
 export default defineConfig({
-  site: "http://localhost:4321",
+  site: "https://v4-one-theta.vercel.app",
   // The blog used to live at /thoughts.
   redirects: {
     "/thoughts": "/blog",
