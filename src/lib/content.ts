@@ -1,5 +1,5 @@
-// Drafts are visible on the dev server (with a "Draft" badge) so they can be
-// read in place, and are left out of production builds. RSS always skips them.
+// Only published entries are shown anywhere on the site, the dev server
+// included. Set `draft: true` in a post or project to keep it hidden.
 export function isVisible(entry: { data: { draft?: boolean } }): boolean {
-  return !entry.data.draft || import.meta.env.DEV;
+  return !entry.data.draft;
 }
