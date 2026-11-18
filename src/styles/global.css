@@ -101,3 +101,11 @@ html #back-to-top {
 html.scrolled #back-to-top {
   @apply opacity-100 pointer-events-auto;
 }
+
+/* Wide display maths and tables scroll instead of spilling out of the column. */
+article .katex-display {
+  @apply overflow-x-auto overflow-y-hidden py-1;
+}
+article table {
+  @apply block overflow-x-auto;
+}
