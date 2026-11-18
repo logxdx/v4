@@ -1,0 +1,88 @@
+---
+import { FOCUS_AREAS } from "@consts";
+
+// Filter chips for a list of entries tagged with focus areas.
+// Items to filter carry `data-areas="rag agents"`; optional wrappers carry
+// `data-area-group` and are hidden when none of their items match; an element
+// with `data-area-empty` is shown when nothing matches. Syncs with ?area=<slug>.
+type Props = {
+  entries: { data: { areas: string[] } }[];
+  label: string;
+};
+
+const { entries, label } = Astro.props;
+
+const chips = FOCUS_AREAS
+  .map((area) => ({
+    ...area,
+    count: entries.filter((e) => e.data.areas.includes(area.slug)).length,
+  }))
+  .filter((area) => area.count > 0);
+---
+
+{chips.length > 0 && (
+  <div class="flex flex-wrap gap-2" role="group" aria-label={label} data-area-filter>
+    <button type="button" class="area-chip" data-area="" aria-pressed="true">
+      All <span class="opacity-60">{entries.length}</span>
+    </button>
+    {chips.map((area) => (
+      <button type="button" class="area-chip" data-area={area.slug} aria-pressed="false">
+        {area.short} <span class="opacity-60">{area.count}</span>
+      </button>
+    ))}
+  </div>
+)}
+
+<style>
+  .area-chip {
+    @apply inline-flex items-baseline gap-1.5 rounded-full border border-black/15 px-3 py-1 font-mono text-xs transition-colors duration-300 ease-in-out;
+    @apply hover:bg-black/5 hover:text-black dark:border-white/20 dark:hover:bg-white/5 dark:hover:text-white;
+  }
+  .area-chip[aria-pressed="true"] {
+    @apply border-black bg-black text-white dark:border-white dark:bg-white dark:text-black;
+  }
+</style>
+
+<script>
+  function initAreaFilter() {
+    const bar = document.querySelector<HTMLElement>("[data-area-filter]");
+    const items = Array.from(document.querySelectorAll<HTMLElement>("[data-areas]"));
+    const groups = Array.from(document.querySelectorAll<HTMLElement>("[data-area-group]"));
+    const empty = document.querySelector<HTMLElement>("[data-area-empty]");
+    if (!bar) return;
+
+    const chips = Array.from(bar.querySelectorAll<HTMLButtonElement>("button[data-area]"));
+
+    const apply = (area: string) => {
+      let shown = 0;
+      for (const item of items) {
+        const match = !area || (item.dataset.areas ?? "").split(" ").includes(area);
+        item.hidden = !match;
+        if (match) shown++;
+      }
+      for (const group of groups) {
+        group.hidden = !group.querySelector("[data-areas]:not([hidden])");
+      }
+      for (const chip of chips) {
+        chip.setAttribute("aria-pressed", String(chip.dataset.area === area));
+      }
+      empty?.classList.toggle("hidden", shown > 0);
+    };
+
+    for (const chip of chips) {
+      chip.addEventListener("click", () => {
+        const area = chip.dataset.area ?? "";
+        const url = new URL(window.location.href);
+        if (area) url.searchParams.set("area", area);
+        else url.searchParams.delete("area");
+        history.replaceState(history.state, "", url);
+        apply(area);
+      });
+    }
+
+    apply(new URL(window.location.href).searchParams.get("area") ?? "");
+  }
+
+  // Re-run on every client-side navigation (ClientRouter is on).
+  document.addEventListener("astro:page-load", initAreaFilter);
+</script>

@@ -4,7 +4,8 @@ import SpotlightLink from "@components/react/SpotlightLink";
 import { FOCUS_AREAS } from "@consts";
 
 // Numbered cards for the areas I work in. A card links to the filtered
-// project list once at least one published project is tagged with it.
+// project list when the area has projects, otherwise to its blog posts
+// (RL and fine-tuning work is mostly write-ups, not repos).
 const projects = (await getCollection("projects")).filter((p) => !p.data.draft);
 const posts = (await getCollection("blog")).filter((p) => !p.data.draft);
 
@@ -16,7 +17,12 @@ const areas = FOCUS_AREAS.map((area, i) => {
     index: String(i + 1).padStart(2, "0"),
     projectCount,
     postCount,
-    href: projectCount > 0 ? `/projects?area=${area.slug}` : undefined,
+    href:
+      projectCount > 0
+        ? `/projects?area=${area.slug}`
+        : postCount > 0
+          ? `/blog?area=${area.slug}`
+          : undefined,
   };
 });
 

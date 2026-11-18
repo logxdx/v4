@@ -3,6 +3,7 @@ import { type CollectionEntry, getCollection } from "astro:content";
 import PageLayout from "@layouts/PageLayout.astro";
 import Container from "@components/Container.astro";
 import ArrowCard from "@components/ArrowCard.astro";
+import AreaFilter from "@components/AreaFilter.astro";
 import Link from "@components/Link.astro";
 import { BLOG, FOCUS_AREAS } from "@consts";
 
@@ -45,24 +46,32 @@ const topics = FOCUS_AREAS.map((area) => area.title).join(", ");
           </p>
         </div>
       ) : (
-        <div class="space-y-4">
-          {years.map(year => (
-            <section class="animate space-y-4">
-              <div class="font-mono font-semibold text-black dark:text-white">
-                {year}
-              </div>
-              <ul class="flex flex-col gap-4">
-                {
-                  posts[year].map((post) => (
-                    <li>
-                      <ArrowCard entry={post}/>
-                    </li>
-                  ))
-                }
-              </ul>
-            </section>
-          ))}
-        </div>
+        <>
+          <div class="animate">
+            <AreaFilter entries={data} label="Filter posts by area" />
+          </div>
+          <div class="space-y-4">
+            {years.map(year => (
+              <section class="animate space-y-4" data-area-group>
+                <div class="font-mono font-semibold text-black dark:text-white">
+                  {year}
+                </div>
+                <ul class="flex flex-col gap-4">
+                  {
+                    posts[year].map((post) => (
+                      <li data-areas={post.data.areas.join(" ")}>
+                        <ArrowCard entry={post}/>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </section>
+            ))}
+          </div>
+          <p class="hidden text-sm" data-area-empty>
+            No posts in this area yet.
+          </p>
+        </>
       )}
     </div>
   </Container>

@@ -1,4 +1,4 @@
-import { defineCollection, z } from "astro:content";
+import { defineCollection, reference, z } from "astro:content";
 import { AREA_SLUGS } from "../consts";
 
 const area = z.enum(AREA_SLUGS);
@@ -42,6 +42,9 @@ const projects = defineCollection({
     tags: z.array(z.string()).default([]),
     // Pinned to the top of the homepage list.
     featured: z.boolean().default(false),
+    // Slug of a blog post that writes this project up (src/content/blog/<slug>).
+    // Linked from the project page once the post is published.
+    writeup: reference("blog").optional(),
   }),
 });
 

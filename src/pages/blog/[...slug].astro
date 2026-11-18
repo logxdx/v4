@@ -1,11 +1,12 @@
 ---
-import { type CollectionEntry, getCollection } from "astro:content";
+import { type CollectionEntry, getCollection, getEntry } from "astro:content";
 import PageLayout from "@layouts/PageLayout.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import TagList from "@components/TagList.astro";
 import { readingTime } from "@lib/utils";
 import BackToPrev from "@components/BackToPrev.astro";
+import Link from "@components/Link.astro";
 import { FOCUS_AREAS } from "@consts";
 
 export async function getStaticPaths() {
@@ -21,6 +22,14 @@ type Props = CollectionEntry<"blog">;
 
 const post = Astro.props;
 const { Content } = await post.render();
+
+// Projects whose `writeup` points at this post.
+const projects = [];
+for (const p of await getCollection("projects")) {
+  if (p.data.draft || !p.data.writeup) continue;
+  const target = await getEntry(p.data.writeup);
+  if (target?.slug === post.slug) projects.push(p);
+}
 
 const areaLabel = FOCUS_AREAS
   .filter((area) => post.data.areas.includes(area.slug))
@@ -53,6 +62,17 @@ const areaLabel = FOCUS_AREAS
       <h1 class="animate text-2xl font-semibold text-black dark:text-white">
         {post.data.title}
       </h1>
+      {projects.length > 0 && (
+        <nav class="animate flex flex-wrap gap-1 text-sm">
+          <span>Write-up of</span>
+          {projects.map((p, i) => (
+            <>
+              {i > 0 && <span>/</span>}
+              <Link href={`/projects/${p.slug}`}>{p.data.title}</Link>
+            </>
+          ))}
+        </nav>
+      )}
       {post.data.tags.length > 0 && (
         <div class="animate pt-3">
           <TagList tags={post.data.tags} />
