@@ -1,5 +1,6 @@
 ---
 title: "Sandboxing coding agents on my own machine"
+short: "Sandboxing agents"
 description: "How I'd keep a coding agent away from my secrets on macOS and Linux, from Seatbelt and bubblewrap up to gVisor."
 date: "2026-09-29"
 draft: true

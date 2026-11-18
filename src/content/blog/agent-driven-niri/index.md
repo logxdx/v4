@@ -1,5 +1,6 @@
 ---
 title: "Making niri agent-drivable on a 6 GB laptop GPU"
+short: "Agent-driven niri"
 description: "How I built pi-operator, which lets an agent drive my niri desktop with three small local models on a 6 GB laptop GPU."
 date: "2026-09-14"
 updated: "2026-11-15"

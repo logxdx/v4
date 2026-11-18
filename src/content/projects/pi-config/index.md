@@ -1,5 +1,6 @@
 ---
 title: "pi agent setup"
+short: "pi agent setup"
 description: "My setup for the pi terminal coding agent, with extensions for real-browser control, safety checks, checkpoints and web search."
 date: "November 2026"
 repoURL: "https://github.com/logxdx/pi-config"

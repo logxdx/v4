@@ -1,5 +1,6 @@
 ---
 title: "Data beats base: calibrated sub-100 ms classifiers on a 6 GB laptop"
+short: "Data beats base"
 description: "How I built fast, calibrated decision models on a laptop GPU, and found that training on the task mattered much more than the base model."
 date: "2026-09-19"
 draft: true

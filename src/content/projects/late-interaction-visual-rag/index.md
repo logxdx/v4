@@ -1,5 +1,6 @@
 ---
 title: "Late interaction for visual RAG"
+short: "Late interaction RAG"
 description: "RAG over PDFs that indexes whole pages as images with ColPali-style models, so charts, tables and layout count as much as the text."
 date: "August 2025"
 repoURL: "https://github.com/logxdx/contextualized-late-interation-with-pdfs"

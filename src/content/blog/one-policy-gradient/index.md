@@ -1,5 +1,6 @@
 ---
 title: "Every RL method for LLMs is the same policy gradient"
+short: "One policy gradient"
 description: "How REINFORCE, PPO, GRPO, DAPO, GSPO and CISPO all come from one policy-gradient formula, with each method changing one small piece of it."
 date: "2026-10-21"
 draft: true

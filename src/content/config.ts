@@ -7,6 +7,8 @@ const blog = defineCollection({
   type: "content",
   schema: z.object({
     title: z.string(),
+    // Short label for compact link lists (e.g. the homepage focus areas).
+    short: z.string().optional(),
     description: z.string(),
     date: z.coerce.date(),
     // Set when a post is substantially revised; shown next to the date.
@@ -33,6 +35,8 @@ const projects = defineCollection({
   type: "content",
   schema: z.object({
     title: z.string(),
+    // Short label for compact link lists (e.g. the homepage focus areas).
+    short: z.string().optional(),
     description: z.string(),
     date: z.coerce.date(),
     draft: z.boolean().optional(),

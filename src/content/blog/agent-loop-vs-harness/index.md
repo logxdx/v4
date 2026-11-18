@@ -1,5 +1,6 @@
 ---
 title: "The loop is seven lines; the harness is everything else"
+short: "Loop vs harness"
 description: "What an agent harness adds around the simple agent loop, and which failure each piece prevents."
 date: "2026-09-28"
 draft: true

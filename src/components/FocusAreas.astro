@@ -1,65 +1,46 @@
 ---
 import { getCollection } from "astro:content";
 import { isVisible } from "@lib/content";
-import SpotlightLink from "@components/react/SpotlightLink";
 import { FOCUS_AREAS } from "@consts";
 
-// Numbered cards for the areas I work in. A card links to the filtered
-// project list when the area has projects, otherwise to its blog posts
-// (RL and fine-tuning work is mostly write-ups, not repos).
-const projects = (await getCollection("projects")).filter(isVisible);
-const posts = (await getCollection("blog")).filter(isVisible);
+// A bulleted list of the areas I work in, each followed by links to the
+// projects and posts tagged with it: "Area (Project, Post, ...)".
+const projects = (await getCollection("projects"))
+  .filter(isVisible)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const posts = (await getCollection("blog"))
+  .filter(isVisible)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-const areas = FOCUS_AREAS.map((area, i) => {
-  const projectCount = projects.filter((p) => p.data.areas.includes(area.slug)).length;
-  const postCount = posts.filter((p) => p.data.areas.includes(area.slug)).length;
-  return {
-    ...area,
-    index: String(i + 1).padStart(2, "0"),
-    projectCount,
-    postCount,
-    href:
-      projectCount > 0
-        ? `/projects?area=${area.slug}`
-        : postCount > 0
-          ? `/blog?area=${area.slug}`
-          : undefined,
-  };
-});
-
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const areas = FOCUS_AREAS.map((area) => ({
+  ...area,
+  links: [...projects, ...posts]
+    .filter((entry) => entry.data.areas.includes(area.slug))
+    .map((entry) => ({
+      href: `/${entry.collection}/${entry.slug}`,
+      label: entry.data.short ?? entry.data.title,
+      title: entry.data.title,
+    })),
+}));
 ---
 
-<ul class="grid gap-3 sm:grid-cols-2">
+<ul class="list-disc space-y-2 pl-5 marker:text-black/30 dark:marker:text-white/30">
   {
-    areas.map((area) => {
-      const Tag = area.href ? "a" : "div";
-      const meta = [
-        area.projectCount > 0 && plural(area.projectCount, "project"),
-        area.postCount > 0 && plural(area.postCount, "post"),
-      ].filter(Boolean).join(" · ");
-      return (
-        <li class="h-full">
-          <SpotlightLink client:visible className="h-full">
-            <Tag
-              href={area.href}
-              class:list={[
-                "group flex h-full flex-col gap-1.5 rounded-lg px-4 py-3 transition-colors duration-300 ease-in-out",
-                area.href && "hover:bg-black/5 dark:hover:bg-white/5",
-              ]}
-            >
-              <div class="flex items-baseline justify-between gap-3 font-mono text-xs opacity-75">
-                <span>{area.index}</span>
-                {meta && <span>{meta}</span>}
-              </div>
-              <div class="font-semibold text-black dark:text-white">
-                {area.title}
-              </div>
-              <p class="text-sm">{area.blurb}</p>
-            </Tag>
-          </SpotlightLink>
-        </li>
-      );
-    })
+    areas.map((area) => (
+      <li>
+        <span class="text-black dark:text-white">{area.title}</span>
+        {/* Kept on single lines: line breaks between JSX pieces render as spaces. */}
+        {area.links.length > 0 && (
+          <span> ({area.links.map((link, i) => (<>{i > 0 && ", "}<a href={link.href} title={link.title} class="area-link">{link.label}</a></>))})</span>
+        )}
+      </li>
+    ))
   }
 </ul>
+
+<style>
+  .area-link {
+    @apply underline decoration-black/15 underline-offset-2 transition-colors duration-300 ease-in-out;
+    @apply hover:text-black hover:decoration-black/25 dark:decoration-white/30 dark:hover:text-white dark:hover:decoration-white/50;
+  }
+</style>
