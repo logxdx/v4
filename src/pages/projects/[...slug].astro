@@ -1,5 +1,6 @@
 ---
 import { type CollectionEntry, getCollection, getEntry } from "astro:content";
+import { isVisible } from "@lib/content";
 import PageLayout from "@layouts/PageLayout.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
@@ -10,7 +11,7 @@ import TagList from "@components/TagList.astro";
 
 export async function getStaticPaths() {
   const projects = (await getCollection("projects"))
-    .filter(post => !post.data.draft)
+    .filter(isVisible)
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
   return projects.map((project) => ({
     params: { slug: project.slug },
@@ -22,9 +23,9 @@ type Props = CollectionEntry<"projects">;
 const project = Astro.props;
 const { Content } = await project.render();
 
-// Only link the write-up once it's published.
+// Only link the write-up once it's published (or on the dev server).
 const writeup = project.data.writeup ? await getEntry(project.data.writeup) : undefined;
-const writeupHref = writeup && !writeup.data.draft ? `/blog/${writeup.slug}` : undefined;
+const writeupHref = writeup && isVisible(writeup) ? `/blog/${writeup.slug}` : undefined;
 const links = [
   writeupHref && { href: writeupHref, label: "write-up", external: false },
   project.data.demoURL && { href: project.data.demoURL, label: "demo", external: true },

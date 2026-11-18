@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import { isVisible } from "@lib/content";
 import PageLayout from "@layouts/PageLayout.astro";
 import Container from "@components/Container.astro";
 import ArrowCard from "@components/ArrowCard.astro";
@@ -8,7 +9,7 @@ import Link from "@components/Link.astro";
 import { PROJECTS } from "@consts";
 
 const projects = (await getCollection("projects"))
-  .filter(project => !project.data.draft)
+  .filter(isVisible)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
 

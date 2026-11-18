@@ -1,5 +1,6 @@
 ---
 import { type CollectionEntry, getCollection, getEntry } from "astro:content";
+import { isVisible } from "@lib/content";
 import PageLayout from "@layouts/PageLayout.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
@@ -11,7 +12,7 @@ import { FOCUS_AREAS } from "@consts";
 
 export async function getStaticPaths() {
   const posts = (await getCollection("blog"))
-    .filter(post => !post.data.draft)
+    .filter(isVisible)
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
   return posts.map((post) => ({
     params: { slug: post.slug },
@@ -26,15 +27,15 @@ const { Content } = await post.render();
 // Projects whose `writeup` points at this post.
 const projects = [];
 for (const p of await getCollection("projects")) {
-  if (p.data.draft || !p.data.writeup) continue;
+  if (!isVisible(p) || !p.data.writeup) continue;
   const target = await getEntry(p.data.writeup);
   if (target?.slug === post.slug) projects.push(p);
 }
 
-const areaLabel = FOCUS_AREAS
-  .filter((area) => post.data.areas.includes(area.slug))
-  .map((area) => area.title)
-  .join(" · ");
+const areaLabel = [
+  ...FOCUS_AREAS.filter((area) => post.data.areas.includes(area.slug)).map((area) => area.title),
+  ...(post.data.experiment ? ["Personal experiment"] : []),
+].join(" · ");
 ---
 
 <PageLayout title={post.data.title} description={post.data.description}>
@@ -45,9 +46,10 @@ const areaLabel = FOCUS_AREAS
       </BackToPrev>
     </div>
     <div class="space-y-1 my-10">
-      {areaLabel && (
-        <div class="animate font-mono text-xs opacity-75">
-          {areaLabel}
+      {(areaLabel || post.data.draft) && (
+        <div class="animate flex items-center gap-1.5 font-mono text-xs">
+          {post.data.draft && <span class="rounded bg-black/10 px-1.5 text-black dark:bg-white/15 dark:text-white">Draft</span>}
+          <span class="opacity-75">{areaLabel}</span>
         </div>
       )}
       <div class="animate flex items-center gap-1.5">

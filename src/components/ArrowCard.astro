@@ -11,19 +11,20 @@ const { entry } = Astro.props;
 
 // Projects carry a category label ("RAG · Vision"); posts show their date instead.
 const eyebrow = entry.collection === "projects" ? entry.data.category : undefined;
+const experiment = entry.collection === "blog" && entry.data.experiment;
+const draft = Boolean(entry.data.draft);
 ---
 
 <SpotlightLink client:visible>
   <a href={`/${entry.collection}/${entry.slug}`} class="relative group flex flex-nowrap py-3 px-4 pr-10 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out">
     <div class="flex flex-col flex-1 truncate">
-      {eyebrow && (
-        <div class="font-mono text-xs opacity-75 truncate">
-          {eyebrow}
-        </div>
-      )}
-      {entry.collection === "blog" && (
-        <div class="font-mono text-xs opacity-75">
-          <FormattedDate date={entry.data.date} />
+      {(eyebrow || entry.collection === "blog" || draft) && (
+        <div class="flex items-center gap-1.5 font-mono text-xs truncate">
+          {draft && <span class="rounded bg-black/10 px-1.5 text-black dark:bg-white/15 dark:text-white">Draft</span>}
+          <span class="opacity-75 truncate">
+            {entry.collection === "blog" ? <FormattedDate date={entry.data.date} /> : eyebrow}
+            {experiment && " · Personal experiment"}
+          </span>
         </div>
       )}
       <div class="font-semibold text-black dark:text-white">

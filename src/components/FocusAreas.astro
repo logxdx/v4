@@ -1,13 +1,14 @@
 ---
 import { getCollection } from "astro:content";
+import { isVisible } from "@lib/content";
 import SpotlightLink from "@components/react/SpotlightLink";
 import { FOCUS_AREAS } from "@consts";
 
 // Numbered cards for the areas I work in. A card links to the filtered
 // project list when the area has projects, otherwise to its blog posts
 // (RL and fine-tuning work is mostly write-ups, not repos).
-const projects = (await getCollection("projects")).filter((p) => !p.data.draft);
-const posts = (await getCollection("blog")).filter((p) => !p.data.draft);
+const projects = (await getCollection("projects")).filter(isVisible);
+const posts = (await getCollection("blog")).filter(isVisible);
 
 const areas = FOCUS_AREAS.map((area, i) => {
   const projectCount = projects.filter((p) => p.data.areas.includes(area.slug)).length;
