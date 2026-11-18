@@ -8,7 +8,6 @@ category: "RAG · Vision"
 areas: [rag, knowledge]
 tags: ["Late interaction", "ColQwen", "Qdrant", "LiteLLM", "Streamlit"]
 featured: true
-writeup: late-interaction-pdf-rag
 ---
 
 **IntelliPDF** is a high-performance **Retrieval-Augmented Generation (RAG)** pipeline designed to unlock the visual and textual context of PDF documents. 
