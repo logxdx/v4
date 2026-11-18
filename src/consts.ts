@@ -29,45 +29,33 @@ export const PROJECTS: Metadata = {
 };
 
 // Slugs that projects and posts list under `areas`; also the /projects?area=<slug> filter.
-export const AREA_SLUGS = ["rag", "agents", "knowledge", "decision", "rl", "fine-tuning"] as const;
+export const AREA_SLUGS = ["rag", "agents", "decision", "training"] as const;
 
 // The areas I work in, in display order.
 export const FOCUS_AREAS: FocusArea[] = [
   {
     slug: "rag",
-    title: "RAG & Retrieval",
-    short: "RAG",
-    blurb: "Retrieval that holds up on messy, visual, real-world documents, measured and not eyeballed.",
+    title: "RAG & Knowledge Systems",
+    short: "RAG & Knowledge",
+    blurb: "Search and RAG over real documents, images and media.",
   },
   {
     slug: "agents",
     title: "Agentic Systems",
     short: "Agents",
-    blurb: "Agents that plan, call tools, run code and recover when a step fails, inside guardrails.",
-  },
-  {
-    slug: "knowledge",
-    title: "Knowledge Systems",
-    short: "Knowledge",
-    blurb: "Turning scattered docs, images and data into something a model can search and reason over.",
+    blurb: "Agents that plan, call tools and run code safely.",
   },
   {
     slug: "decision",
     title: "Decision Intelligence",
     short: "Decisions",
-    blurb: "Models and analyses that end in a decision, with the numbers to defend it.",
+    blurb: "Small, fast models that make a call and say how sure they are.",
   },
   {
-    slug: "rl",
-    title: "Reinforcement Learning",
-    short: "RL",
-    blurb: "Reward design and policy optimisation, from classic control to RL on language models.",
-  },
-  {
-    slug: "fine-tuning",
-    title: "Fine-tuning",
-    short: "Fine-tuning",
-    blurb: "Adapting open models to a domain with SFT, LoRA and preference tuning, evaluated end to end.",
+    slug: "training",
+    title: "Fine-tuning & RL",
+    short: "Fine-tuning & RL",
+    blurb: "Adapting open models with SFT, LoRA and reinforcement learning.",
   },
 ];
 

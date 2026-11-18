@@ -5,7 +5,7 @@ date: "November 2026"
 repoURL: "https://github.com/logxdx/ZetaDB"
 # demoURL: ""
 category: "Retrieval · Multimodal"
-areas: [rag, knowledge]
+areas: [rag]
 tags: ["EmbeddingGemma 2", "LanceDB", "Hybrid search", "FastAPI", "React", "shadcn/ui"]
 featured: false
 ---

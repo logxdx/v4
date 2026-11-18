@@ -5,7 +5,7 @@ date: "August 2025"
 repoURL: "https://github.com/logxdx/contextualized-late-interation-with-pdfs"
 # demoURL: ""
 category: "RAG · Vision"
-areas: [rag, knowledge]
+areas: [rag]
 tags: ["Late interaction", "ColPali", "ColQwen", "Qdrant", "LiteLLM", "Streamlit"]
 featured: true
 ---

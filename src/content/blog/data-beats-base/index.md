@@ -3,7 +3,7 @@ title: "Data beats base: calibrated sub-100 ms classifiers on a 6 GB laptop"
 description: "How I built fast, calibrated decision models on a laptop GPU, and found that training on the task mattered much more than the base model."
 date: "2026-09-19"
 draft: true
-areas: [fine-tuning, decision]
+areas: [training, decision]
 tags: ["LoRA", "QLoRA", "Qwen3.5", "Temperature scaling", "Soft labels", "vLLM"]
 experiment: false
 ---
