@@ -1,7 +1,7 @@
 ---
 title: "Sandboxing coding agents on my own machine"
 description: "Seatbelt, bubblewrap, Landlock, seccomp and gVisor, tested on macOS and Linux, plus the escape probes that showed which ones actually held."
-date: "2026-11-18"
+date: "2026-11-16"
 draft: true
 areas: [agents]
 tags: ["Seatbelt", "bubblewrap", "Landlock", "seccomp", "gVisor", "Prompt injection"]

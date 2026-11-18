@@ -1,7 +1,7 @@
 ---
 title: "Making niri agent-drivable on a 6 GB laptop GPU"
 description: "Probing a scrolling Wayland compositor for agent control: machine, semantic and pixel channels, a VRAM budget, and the one shim cua is missing."
-date: "2026-11-18"
+date: "2026-11-15"
 draft: true
 areas: [agents]
 tags: ["niri", "Wayland", "AT-SPI", "cua", "llama.cpp", "Computer use"]
