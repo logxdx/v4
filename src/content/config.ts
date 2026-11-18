@@ -9,6 +9,8 @@ const blog = defineCollection({
     title: z.string(),
     description: z.string(),
     date: z.coerce.date(),
+    // Set when a post is substantially revised; shown next to the date.
+    updated: z.coerce.date().optional(),
     draft: z.boolean().optional(),
     areas: z.array(area).default([]),
     tags: z.array(z.string()).default([]),

@@ -1,174 +1,169 @@
 ---
 title: "Making niri agent-drivable on a 6 GB laptop GPU"
-description: "Probing a scrolling Wayland compositor for agent control: machine, semantic and pixel channels, a VRAM budget, and the one shim cua is missing."
+description: "I planned a cua fork and a CPU/GPU model split. What I built: three small Liquid models on one GPU, AT-SPI, niri IPC, and an input calibration."
 date: "2026-09-14"
+updated: "2026-11-15"
 draft: true
 areas: [agents]
-tags: ["niri", "Wayland", "AT-SPI", "cua", "llama.cpp", "Computer use"]
+tags: ["niri", "Wayland", "AT-SPI", "LFM3", "llama.cpp", "Computer use"]
 experiment: true
 ---
 
-I wanted an agent that can drive my actual desktop: niri, a scrolling Wayland compositor, on a laptop with a 6 GB GPU and 15 GiB of RAM. Not a cloud VM, not a sandbox. The machine I work on.
+I wanted an agent that can drive my actual desktop: niri, a scrolling Wayland compositor, on a laptop with a 6 GB GPU. Not a cloud VM, not a sandbox. The machine I work on.
 
-The obvious assumption is that VRAM is the hard part. It isn't. The hard part is that niri sits outside what most computer-use projects support, and that a lot of my apps have no accessibility tree. The models turned out to be the easier decision. This post is the probe, the architecture I landed on, and the plan. It's an experiment in progress, not a finished system.
+In September I probed the session and wrote a plan: three tiers, a grounding VLM on the GPU, a sparse-MoE planner on the CPU, and a fork of cua with a small niri shim. In November I built it, as **pi-operator**, a package of extensions for the [pi](https://pi.dev) agent harness. The ideas mostly survived. The specifics mostly didn't. This post is what actually runs, and where the plan was wrong.
 
-## Probe first, then design
+## The probe still holds
 
-Before choosing anything I checked what the live session actually exposes: the Wayland globals in the niri binary, the AT-SPI bus, and `niri msg --json`. Documentation for this stuff is often wrong, and in one case below it was.
+Before choosing anything I checked what the live session exposes: the Wayland globals in the niri binary, the AT-SPI bus, and `niri msg --json`.
 
-| Capability | Status | What it means |
+| Capability | Status |
+|---|---|
+| Screen capture | `grim` over wlr-screencopy works. |
+| Pointer and keyboard injection | Virtual pointer and virtual keyboard protocols are there. |
+| Window list, focus, per-window screenshot | `niri msg --json windows`, `focus-window`, `screenshot-window`. |
+| AT-SPI on native GTK/Qt apps | Fully introspectable. |
+| AT-SPI on Chromium / Electron | Only with `--force-renderer-accessibility`. |
+| AT-SPI on kitty | None. GPU-rendered terminal. |
+| Portals, libei, `ext-image-copy-capture` | Dead ends on niri. |
+
+The conclusion was right: every actuation primitive exists, and what's patchy is *meaning*. The accessibility tree covers native toolkit apps and little else unless you intervene.
+
+## Pixels are the last resort
+
+The default computer-use loop is screenshot → VLM → click coordinates. On a 6 GB laptop that's the most expensive way to answer most questions, with the worst failure mode: a wrong coordinate is a silent misclick.
+
+So the agent tries three channels in order: **machine** (shell, app CLIs), **semantic** (AT-SPI roles, names and actions), **pixel** (only when the first two come up empty). In the build this became four tool groups the planner can be given:
+
+| Group | What it drives | How |
 |---|---|---|
-| Screen capture | works | `zwlr_screencopy_manager_v1` is there. `grim` works. |
-| Mouse injection | works | `zwlr_virtual_pointer_manager_v1`. No root, no uinput, no `ydotoold`. |
-| Key injection | works | `zwp_virtual_keyboard_manager_v1`. |
-| Unicode text entry | works | `zwp_input_method_manager_v2` with `commit_string`. Layout-independent, better than typing scancodes. |
-| Window list + geometry | works | `niri msg --json windows`: id, title, app_id, pid, workspace, focus, tile size. |
-| Window activation | works | `niri msg action focus-window --id N`. |
-| AT-SPI, GTK4 app | works | Native GTK/Qt apps are fully introspectable. |
-| AT-SPI, Chromium browser | absent | Only exposed with `--force-renderer-accessibility`. Fixable with a flag. |
-| AT-SPI, kitty | absent | GPU-rendered terminal, no a11y at all. |
-| Portal screenshot | dead end | No installed portal backs niri. |
-| libei / EIS | unsupported | niri has no `ei_*` symbols. |
-| `ext-image-copy-capture` | absent | Not in the binary, despite at least one project's docs saying otherwise. |
+| shell | files, processes, settings | pi's own `bash`, behind a risk check |
+| desktop | native apps and windows | [agent-desktop](https://www.npmjs.com/package/agent-desktop) over AT-SPI, plus a `desktop_niri` tool for workspaces, focus, layout |
+| browser | web pages | a browser extension in my real browser, or a headless Chrome |
+| screen | anything else | screenshot → vision model → calibrated pointer |
 
-So the actuation primitives are all there. Capture, pointer, keyboard, text, window list. What's patchy is *meaning*: the a11y tree covers native toolkit apps and nothing else unless I intervene.
+A semantic action through AT-SPI takes 25–70 ms and a snapshot of a window is about 130 tokens of text. A `screen_point` (capture, locate, zoom, locate again) takes about a second. That gap is the whole argument for the ordering.
 
-## Pixels are the last resort, not the default
+Two cheap fixes from the plan are now automatic. `desktop_launch` starts Chromium and Electron apps with the accessibility flags set, which moves a lot of work from the pixel channel to the semantic one. And the terminal is never driven through pixels; the agent gets a shell.
 
-The default mental model for a computer-use agent is screenshot → VLM → click coordinates. On a 6 GB laptop that's the most expensive way to answer most questions, and it has the worst failure mode. A wrong coordinate is a silent misclick. Nothing raises an exception; the agent just clicks the wrong thing and carries on.
+## Three small models, all on the GPU
 
-There are three channels, and I want them tried in this order:
+The plan was Qwen3-VL-4B grounding on the GPU and Ling 3.0 Tiny (7.9B total, 1.3B active) planning on the CPU, because the two together didn't fit in 6 GB. That plan didn't survive contact with the Liquid LFM3 family, which landed at the end of October. Three models from it fit on the GPU at once, so the CPU/GPU split stopped being necessary.
 
-1. **Machine.** Shell, D-Bus, systemd, the filesystem, an app's own CLI or API. Renaming files, launching apps, toggling settings, reading state. None of this should touch a pixel. If a daemon already exposes a D-Bus interface, the agent calls that instead of clicking through its settings window.
-2. **Semantic.** AT-SPI gives role, name and bounds for native toolkit widgets. When an element is in the tree you get an exact rectangle, and you can often fire its action directly with `perform_action` instead of synthesising a click. That's deterministic, and it's roughly 200 tokens of text against roughly 2,600 vision tokens for a full 1080p screenshot.
-3. **Pixel.** Only when the first two come up empty: canvas apps, games, Electron with a11y off, image content.
+They sit behind one `llama-server` in router mode, so there is one process, one port, and no model swapping between "look" and "think":
 
-The point of the ordering is what it does to the model problem. In channels 1 and 2 the model is doing text reasoning over structured state, which a small text model handles fine. You only pay for a VLM on the steps that actually need eyes.
-
-Two cheap fixes fall out of this. Start the browser with `--force-renderer-accessibility=complete` and a large chunk of my day moves from channel 3 to channel 2. And don't drive the terminal through pixels at all. OCR on a terminal is slow and lossy; give the agent a real PTY tool.
-
-## Three tiers
-
-I'd build this strictly bottom-up. Each tier is useful without the ones above it.
+| Role | Model | Quant | Context | Measured |
+|---|---|---|---|---|
+| Planner | LFM3-1.7B | Q6_K | 64K | first tool call in 1.24 s |
+| Eyes | LFM3-VL-2B | Q4_K_M + Q8_0 projector | 4K | 29/29 targets, 1 px median error, ~0.46 s |
+| Judge / router | d1-2B decision model | Q4_K_M + Q8_0 projector | 4K | 28 ms per routing decision |
 
 ```text
-tier 2  planner      text in, one tool call out      CPU or cloud
-tier 1  grounder     "where is X in this image?"     GPU, ~3 GiB
-tier 0  actuation    one Wayland connection, MCP     no model, 0 MiB
+llama-server --models-preset presets.ini --models-max 3
+  [op-planner]  LFM3-1.7B    pi's chat model; text in, one tool call out
+  [op-eyes]     LFM3-VL-2B   "where is X?" -> box in 0-1000 space
+  [op-judge]    d1-2B        one-forward-pass choices: route, check, verify
 ```
 
-**Tier 0: the actuation daemon.** A long-lived process holding one Wayland connection and exposing a local MCP surface: `windows()`, `focus(id)`, `screenshot(output|window)`, `a11y_tree(pid)`, `click`, `move`, `scroll`, `key`, `text`, `action(element, verb)`. It's the only thing that touches the compositor and it has no model in it. Fully deterministic. One detail matters more than it looks: keep the virtual pointer and keyboard objects open across calls. Creating a new virtual pointer per click is slow and racy.
+All three loaded: **5,341 of 6,141 MiB**. The planner is Q6_K rather than Q8_0 for a specific reason. With a 64K Q8_0 planner, the judge's vision encoder fell off the GPU onto the CPU and every check took about 1.1 s. Q6_K buys back enough room that both encoders stay on the GPU.
 
-**Tier 1: grounding.** A small VLM that answers exactly one question: where is X in this image. No planning, no multi-turn, no tools. Stateless, called like a function. This is the one model that really wants the GPU. Vision encoders are compute-bound, so a CPU fallback hurts.
+The VRAM rule from the plan still holds: vision tokens cost more than weights. The eyes never see more than 1,024 px on the long side, and the judge looks at 640 px. When the capture is much larger than 1,024 px, a second pass crops around the first hit at native resolution and locates again. On real 1080p screens that took locate from 1/5 targets (72 px median error) to 4/5 (29 px), for about twice the latency.
 
-**Tier 2: planning.** Text in, text out, over the a11y tree, window list, task history and tool results. Emits one tool call at a time. This is where a sparse MoE earns its place. Ling 3.0 Tiny is 7.9B total with 1.3B active parameters. Decode is memory-bandwidth-bound on active weights, so at Q4 you read roughly 0.7 GB per token instead of 4.4 GB. That's the rare model that runs respectably on a laptop CPU, and it's the whole reason the split works. It also has no vision encoder, so it couldn't do tier 1 anyway.
+Day to day I've since moved the planner to a fast cloud model, with the eyes and the judge still local. Everything measured below was run with the local 1.7B planner.
 
-## The VRAM budget
+## The model I didn't plan for
 
-The card has 6,141 MiB. The compositor and a browser take some of that, so I budget about 5.4 GiB as usable. Three configurations, with weights from published GGUF sizes and KV/vision estimates assuming a 1280×720 screenshot and an 8K text window:
+The plan had a planner and a grounder. The build needed a third model, and it's the one I'd keep if I could only keep one: a small decision model that answers a multiple-choice question in a single forward pass.
 
-| Component (MiB) | A: grounder GPU, planner CPU | B: grounder GPU, planner cloud | C: both on GPU |
+It does two jobs.
+
+**Routing.** Before the planner's first request, d1 picks which tool group the task needs: real browser, headless browser, desktop, screen, or none. Only that group's tools and its skill notes go into the prompt. On 38 held-out tasks:
+
+| Router | Exact | Missing group | Latency |
 |---|---|---|---|
-| VLM weights (Q4_K_M) | Qwen3-VL-4B: 2,516 | Holo1.5-3B: ~2,000 | Qwen3-VL-4B: 2,516 |
-| Vision projector (Q8) | 454 | ~450 | 454 |
-| KV + vision tokens | ~900 | ~850 | — |
-| Planner weights | in system RAM | remote | Ling 3.0 Tiny: ~4,400 |
-| **Total** | **≈ 3,870** | **≈ 3,300** | **≈ 7,370** |
-| Fits? | yes, ~2 GiB headroom | yes | no, over by ~1.2 GiB |
+| d1, top-1 choice | 31/38 | 4 | 28 ms |
+| my keyword rules | 21/38 | 15 | ~0 |
 
-C is the configuration everyone reaches for first, and the usual workaround is swapping models with something like llama-swap. That adds 2–5 seconds of load time to every switch between "look" and "think", which is every agent step. A exists to avoid exactly that: both models stay resident, no cold starts.
+My keyword rules were written while looking at the dev set and were visibly overfit (57/65 on the dev set). They're gone now. Using the 1.7B planner as a classifier through its log-probabilities failed outright. One threshold mattered. Touching my own browser needs a confidence of at least 0.6, because d1 read "Log in to <site>" as "use the user's browser" at 0.47.
 
-The hidden cost is vision tokens, not weights. A full 1920×1080 screenshot is about 2,600 vision tokens in a Qwen-family VLM, and it dominates both KV and latency. It gets worse on a 1440p external. Downscale to around 1280×720, or better, crop to the target window using geometry niri already gave you. Cropping is free accuracy: fewer distractors and more effective resolution where it matters.
+**Checking.** After an action, d1 looks at a small screenshot and says what state the screen is in (16/16 fixtures, 21/21 real shots, 69 ms median). An optional finish gate asks it whether the task is complete and whether the claimed answer is supported by what was last read. That second question exists because an earlier gate only checked completeness, and the planner happily completed tasks with wrong answers.
 
-## The model shortlist
+## Driving niri without forking cua
 
-| Model | Size @ Q4 | Role | Verdict |
+The plan's centrepiece was a fork of cua: its Linux driver already speaks every protocol niri has, and it fails on niri only because it can't get compositor-attested window geometry. I'd write the niri equivalent of its Sway shim and upstream it.
+
+I didn't fork anything. The build is TypeScript inside pi, and every desktop action is a one-shot subprocess:
+
+- **Semantic channel:** agent-desktop, a CLI over AT-SPI. It does snapshots, finds and actions, but on Wayland it can't focus, close or screenshot a window.
+- **Windows:** `niri msg -j` for windows, workspaces, outputs and actions. That fills exactly agent-desktop's gaps.
+- **Pixels:** `grim` on the focused output; `niri msg action screenshot-window` for one window.
+- **Input:** `ydotool` for the mouse and `wtype` for keys and text.
+
+The glue was full of small surprises:
+
+- **Matching windows by title, not pid.** XWayland apps report the pid of the XWayland bridge, so agent-desktop's pid and niri's pid don't agree.
+- **`screenshot-window` also copies to the clipboard.** The tool saves and restores the clipboard around every window screenshot.
+- **Windows with no accessibility tree** are listed as such, with a hint to use the screen tools, so the planner doesn't keep asking for a tree that will never come.
+- **Focus stealing**, which I predicted, is handled by parking the agent's own windows on a niri workspace named `operator` and handing focus back to whatever I was using.
+
+The one gap from the plan is still open: niri doesn't expose a window's global position in its scrolling layout. Where a click must land inside a specific window, the code estimates the point from the tile position and output origin, then checks it with the eyes before trusting it.
+
+## The coordinate bug I predicted, and the one I got
+
+I was sure the first bug would be fractional scaling: a 1.25-scale panel, physical-pixel screenshots, logical-coordinate pointer, and every click about 20% off. I wrote the transform up front and it's in the code: divide by the capture-to-logical ratio, add the output's logical origin.
+
+It hasn't been tested at a fractional scale. The display that the screen tools run on is now at scale 1.
+
+The bug I actually hit was also almost exactly 20%. `ydotool mousemove --absolute` doesn't really move absolutely. It moves relatively from the corner, so pointer acceleration applies. My niri input config had a flat acceleration profile at speed 0.2, which multiplied every move by 1.2.
+
+The fix is a calibration script. It opens a fullscreen window and moves to a grid of points. It then fits `landed = scale × requested + offset` per axis and saves the fit only if held-out points improve:
+
+| | Points | Max error | Median error |
 |---|---|---|---|
-| Qwen3-VL-4B | 2.5 GB + 0.45 | Grounder | Start here. Official GGUF and mmproj, works in `llama-server` today, Apache 2.0, and it can also read documents on screen. |
-| Holo1.5-3B | ~2.0 GB | Grounder | Best grounding per GB: ScreenSpot-Pro 51.5, above OmniParser v2 (39.6) and UI-TARS-72B (38.1). No official GGUF, and it's under a research license. |
-| OpenCUA-7B | ~4.5 GB | Grounder + planner | MIT, so the licensing escape hatch. But it grounds *and* plans, which collapses tiers 1 and 2 and kills the CPU/GPU split. |
-| Ling 3.0 Tiny | ~4.4 GB | Planner | 1.3B active, runs in llama.cpp. On CPU. Its agentic benchmark score is low, so fine for single-step tool selection, weak on long chains. |
-| Qwen3-VL-8B | ~5.0 GB + 0.45 | Grounder | Too tight. Under 700 MiB left for everything else; one more browser tab and it OOMs. |
-| OmniParser v2 | ~1.5 GB | Screen parser | Not a VLM: an icon detector plus captioner that emits an element list. Useful as a fallback element source where AT-SPI is blind. Second runtime (Torch). |
-| UI-TARS-7B | ~4.5 GB | End-to-end agent | Elegant, but no split possible and nothing else fits beside it. Grounding below Holo1.5-3B at twice the size. |
-| Moondream 3.1 | — | Grounder | Architecturally ideal (MoE with native point/detect), but no llama.cpp support and Torch inference was measured around 19 GB. Not yet. |
+| Before calibration | 15 | 312 px | 193 px |
+| After, held-out | 6 | 0 px | 0 px |
 
-ScreenSpot-Pro is the benchmark I care about here: high-resolution professional software, which is closer to real desktop use than web screenshots. All benchmark numbers are as published by the model authors and the leaderboard; I haven't reproduced them.
+The fitted scale came out at 1.2003 on x and 1.1998 on y. The first attempt fitted badly (112 px) and looked like non-linearity. It wasn't. The grid points at 90% of the screen had been clamped at the screen edge. Dropping clamped samples and refining in a second pass fixed it. The calibration I run ends with a click test on three buttons, so a bad fit fails loudly instead of misclicking later.
 
-## Don't write the driver: fork cua
+## Safety is a tripwire, not a sandbox
 
-I looked at the computer-use projects I'd bookmarked. One is macOS-only and never actually clicks; it animates a cursor to *point*. One is an agent host with no native computer control. And cua has an open issue saying niri capture works but every input action is refused.
+Any Wayland client can already record the screen and inject input, so the agent adds no new attack surface against the compositor. What it adds is consequences: "the model said so" becomes real keystrokes. So every acting tool goes through a gate:
 
-That issue made cua look like a non-starter. Reading the driver source instead of the issue tracker changed my mind. Its Linux driver is a self-contained Rust crate, and the Wayland layer is generic wlroots code, not per-compositor code: a persistent `ZwlrVirtualPointerV1` for input, wlr-screencopy for capture, a full AT-SPI integration. Every protocol it uses is in niri's registry. The actuation layer needs no new code.
+- Each action is assessed from facts: the field type, label, form method, app, shell command. The verdict is allow, ask or block. Typing into password, OTP and card fields is blocked. Buy, send, delete, submit, closing windows and risky shell commands (`sudo`, `rm`, installs, `git push`) ask first.
+- One "no" per task. After I decline a risky step, the agent can't rephrase it or ask about the next one; it stops and reports what's left for me to do.
+- Page and screen text reaches the planner fenced as untrusted. In the hard evals a planted prompt injection was ignored 3/3, and the gate stopped "Delete account" 3/3.
+- A global stop (a key bound in niri) aborts the turn and kills in-flight input in about 7 ms.
+- The "point, don't click" mode I wanted in the plan exists. An overlay ring shows where the agent would act. With real input off, it only points.
 
-What fails is one function. When cua wants to act on a window, it asks for compositor-attested geometry. It tries Sway's IPC, then a GNOME helper, and if neither answers it returns `surface_identity_unproven`. That refusal is deliberate. An off-workspace XWayland window keeps its X11 geometry and AT-SPI bounds while the screen actually shows another app's pixels, so cua would rather refuse than click blind. I agree with that design. On niri both sources return nothing, so per-window capture comes back 0×0, the element tree collapses to one node, and input is refused. That's the whole bug.
+## The browser is my browser
 
-The Sway shim is small: it shells out to the compositor's IPC and returns `{id, pid, title, app_id, x, y, width, height, visible, focused}`. `niri msg --json windows` has nearly all of that. The plan is a sibling niri module:
+The plan treated the browser as one more AT-SPI app. In practice web work goes through a browser extension in my real browser, with no remote-debugging port and no `chrome.debugger`. The page sees `navigator.webdriver === false` and no automation banner. The extension handles frames, closed shadow roots, ARIA widgets, uploads, and "trusted" real-mouse clicks for pages that ignore synthetic events.
 
-- **Use the `niri-ipc` crate, not a subprocess.** niri publishes a typed Rust crate speaking its socket protocol, with an event stream (`WindowsChanged`, `WorkspacesChanged`). Hold a live cache instead of re-polling on every tool call.
-- **Visibility proof: `active_window_id`, not tile position.** My first idea was to treat a non-null `tile_pos_in_workspace_view` as "visible". I probed it and it's `null` even for the focused window, and the crate docs say it may change. Don't build on it. The reliable check is in the workspace reply.
-- **Let the compositor do window capture.** `niri msg action screenshot-window --id <ID>` decides which pixels belong to the window. That's a stronger attestation than any rectangle I could compute, and it's exactly what `surface_identity_unproven` is asking for.
-- **Put sway and niri behind one façade.** The Sway IPC module is referenced from about 20 call sites. A small "try sway, then niri" layer is less churn and more likely to be mergeable than editing every arm.
-- **Fix the docs.** A couple of comments claim niri supports `ext-image-copy-capture`. It doesn't. The wlr-screencopy fallback is the real path.
+The agent's tabs open in their own unfocused window on the `operator` workspace. It touches my own tabs only when the task is about them, and on exit it closes only what it opened. For URL tasks and evals there is also a headless Chrome backend.
 
-The visibility check, in the shape I'd write it:
+There's a voice front end too: wake word, push-to-talk on a spare key, spoken approvals, CPU-only speech models. It deserves its own post.
 
-```python
-def is_visible(window_id: int, workspaces: list[dict]) -> bool:
-    # niri: a window is on screen if it's the active window
-    # of a workspace that is currently active on some output
-    return any(
-        ws["is_active"] and ws["active_window_id"] == window_id
-        for ws in workspaces
-    )
-```
+## How well it works
 
-There's one real gap. niri's IPC gives window size, workspace, and each output's logical origin and scale, but not a window's global position, because the scrolling layout's view offset isn't exposed. So I can't map "pixel 400,300 inside this window" to a global click. The workaround needs no upstream change: ground clicks on a full-output screenshot, where coordinates are in output space, and use per-window screenshots only for reading. A small niri PR exposing window position would be the proper fix.
+All of these used the local LFM3-1.7B planner:
 
-The bonus is portability. cua defines one typed tool contract with sibling macOS, Windows and Linux crates, plus a per-platform support ledger built from CI evidence, where "unsupported" is a typed refusal rather than a silent no-op. Write niri support once and the other platforms are already someone else's job. The cost is honest too: it's a large polyglot monorepo, the published binaries have features gated off so I'd build from source, and the niri issue has had no maintainer reply. A fork is useful on day one regardless.
+| Eval | Result |
+|---|---|
+| End-to-end tasks (login, cart, settings, contact, modal, canvas, desktop, guard, screen read) | 23/23 runs, 1–10 tool calls, 3–38 s each |
+| Hard evals: 17 tasks × 3 runs (a local test site, mixed browser + desktop, the gate, Wikipedia, GitHub, Hacker News) | 45/51 at first, 47/51 after fixes |
+| Real browser: "find the cheapest USB-C cable" | correct in 5 tool calls (21 before a fix) |
 
-## The fractional-scaling trap
+The failures were mundane: a wizard `<select>` that silently didn't change, async dropdowns, stale element references, and the finish gate that checked completeness instead of truth. All four are fixed.
 
-This is the bug I'd bet on hitting first. My laptop panel is 1920×1080 at scale 1.25, which is 1536×864 logical. The external is 2560×1440 at scale 1.0. A screenshot gives physical pixels. `zwlr_virtual_pointer` wants logical coordinates in one global space that spans both outputs.
+## What the plan got wrong
 
-So every coordinate the VLM produces has to be divided by *that output's* scale and offset by *that output's* logical origin, and the divisor differs per monitor. Get it wrong and every click on the laptop panel lands about 20% off while the external works perfectly. It's the same bug that was filed against cua for niri. Write the transform once, test it on both monitors, never inline it:
+- **The model split.** I designed around the assumption that a planner and a grounder couldn't share 6 GB. A month later, one family shipped three models that do. Design around roles, not models; the models change faster than the architecture.
+- **The missing role.** I planned "think" and "look" and forgot "decide". A 28 ms judge that routes, checks and verifies did more for reliability than any upgrade to the planner would have.
+- **The driver.** Forking cua was the elegant answer. Gluing agent-desktop, `niri msg`, `grim`, `ydotool` and `wtype` was the working answer, in days, and none of it needs a Rust fork I'd have to carry.
+- **The bug I'd bet on.** I'd have lost the bet. Write the scaling transform anyway, but calibrate the input path before trusting any coordinate. Measure where clicks land instead of computing where they should.
 
-```python
-def to_global(px: float, py: float, output: dict,
-              shot_w: int, phys_w: int) -> tuple[float, float]:
-    """Screenshot pixel -> global logical coordinate for the virtual pointer.
+Open questions:
 
-    output: one entry from `niri msg --json outputs`
-    shot_w / phys_w: undo any downscaling done before inference
-    """
-    k = phys_w / shot_w                 # back to physical pixels
-    lg = output["logical"]
-    return (lg["x"] + px * k / lg["scale"],
-            lg["y"] + py * k / lg["scale"])
-```
-
-## Other traps
-
-- **niri scrolls.** Windows live on an infinite horizontal strip, so a window in the list is often off screen, and focusing it scrolls the viewport and moves every other window. Focus first, re-read state, never cache a position across an action.
-- **Focus stealing.** Activating a window to click it yanks focus from whatever I was doing. Record the previously focused id and restore it.
-- **Stale screenshots.** Capture, ground and act must be one tight transaction, re-captured if more than a moment passes. This is where destructive misclicks come from.
-- **RAM is the quiet ceiling.** About 4.9 GiB is in use at idle, the planner takes 4.4 GiB resident, and a browser takes 3–4 more. Touching swap mid-inference feels like a hang.
-- **Security doesn't change, consequences do.** Any unsandboxed Wayland client can already record the screen and inject input. The daemon adds no new attack surface against niri; it does turn "the model said so" into real keystrokes. `wp_security_context_manager_v1` is there if I want to sandbox the daemon later.
-
-## Build order
-
-1. **Prove actuation with no models.** Click a known button from a shell script with `grim` and `wlrctl`. Write and test the transform. If this doesn't work reliably, no model will save it.
-2. **Fork cua and write the niri shim.** The red test is easy: full screenshots work, per-window capture fails with `surface_identity_unproven`. When it passes, capture, the element tree and input should come back together.
-3. **Close the loop with a cloud model.** If the loop fails with a strong model, the daemon is wrong. If it works, later failures belong to the local model. Debugging both at once is how these projects stall.
-4. **Swap in local models.** Qwen3-VL-4B on the GPU, Ling 3.0 Tiny on the CPU, routed per step. Track the fraction of steps that hit the VLM; above about 30% means the semantic channel isn't pulling its weight, which is cheaper to fix than any model.
-5. **Specialise if needed.** Holo1.5-3B if grounding is the limiter, OmniParser for a11y-blind apps, and if planning is the limiter, keep the planner in the cloud.
-
-## What I'd do differently
-
-Build a "point, don't click" mode before anything that acts. One of the projects I looked at only ever points: it moves an overlay to where it would act and waits. That's a free supervision mode. Every coordinate-transform bug shows up as a highlight in the wrong place instead of a click in the wrong place, and it's useful on its own.
-
-Open questions I don't have answers to yet:
-
-- Does Holo1.5-3B's benchmark lead survive on my own screens against Qwen3-VL-4B and OpenCUA-7B? Published grounding numbers are not my desktop.
-- Is a 1.3B-active planner good enough for anything past single-step tool selection, or does planning just belong in the cloud?
-- Will upstream take the niri module, or is this a fork I carry? The Hyprland work coming in from outside contributors suggests community PRs do land.
+- Fractional scaling and real clicks into other apps are still unverified on this machine.
+- How far does a 1.7B planner go? Far enough for 47/51 on my hard set, and it needed code fixes for wizards and async widgets. I haven't re-run the evals with the cloud planner I now use day to day, so I can't say yet what it buys.
+- Should niri expose window positions over IPC? It would remove the last estimate in the click path.
