@@ -1,7 +1,7 @@
 ---
 title: "Data beats base: calibrated sub-100 ms classifiers on a 6 GB laptop"
 description: "One forward pass, option-token logits, soft labels and a temperature: fast decision models where training data mattered far more than the base."
-date: "2026-11-17"
+date: "2026-09-19"
 draft: true
 areas: [fine-tuning, decision]
 tags: ["LoRA", "QLoRA", "Qwen3.5", "Temperature scaling", "Soft labels", "vLLM"]

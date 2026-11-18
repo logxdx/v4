@@ -3,7 +3,7 @@
 # Flip it to false (or delete the line) once it's written.
 title: "Late interaction for PDF RAG: what 13x faster retrieval actually cost"
 description: "Indexing PDF pages as images with ColQwen, and the prefetch + rerank trick that made it usable."
-date: "2026-11-13"
+date: "2025-08-24"
 draft: true
 # Any of: rag, agents, knowledge, decision, rl, fine-tuning
 areas: [rag, knowledge]

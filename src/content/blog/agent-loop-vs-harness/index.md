@@ -1,7 +1,7 @@
 ---
 title: "The loop is seven lines; the harness is everything else"
 description: "Why the agent loop is trivial, and what a harness has to add around it, with the failure each piece prevents."
-date: "2026-11-14"
+date: "2026-09-28"
 draft: true
 areas: [agents]
 tags: ["Agent harness", "Tool calling", "Checkpointing", "Prompt caching", "Sandboxing"]

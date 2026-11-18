@@ -1,7 +1,7 @@
 ---
 title: "Every RL method for LLMs is the same policy gradient"
 description: "REINFORCE, PPO, GRPO, DAPO, GSPO and CISPO as one estimator with a different weight, ratio or clip, and the failure each change fixes."
-date: "2026-11-18"
+date: "2026-10-21"
 draft: true
 areas: [rl]
 tags: ["REINFORCE", "PPO", "GRPO", "DAPO", "GSPO", "CISPO"]
