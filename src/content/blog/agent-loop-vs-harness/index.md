@@ -169,13 +169,13 @@ I record each way of stopping as its own run status.
 
 `max_turns` and `completed` both end the loop, but only one of them means the test is fixed. If your eval or your downstream code can't tell them apart, sooner or later you'll ship a turn cap as a success.
 
-There are three rules here I'd hold firm on.
+I follow three rules for stopping a run.
 
 Treat truncation as failure. A response that hit the output-token limit may carry a half-written tool call. Running a half-written `apply_patch` is worse than stopping.
 
-Check budgets before each model call. An alert that fires after the money is spent is only a report. It can't stop anything.
+Check budgets before each model call, so the run stops before it spends too much.
 
-And remember that a turn cap doesn't bound cost. This one is easy to miss, so here's the maths.
+A turn cap doesn't limit cost, and the maths shows why.
 
 The model is stateless. It remembers nothing between calls, so every turn resends the whole transcript so far. You pay for every token you send, and a token is a small chunk of text, often a short word.
 
