@@ -1,7 +1,7 @@
 ---
 title: "hyperparse"
 short: "hyperparse"
-description: "A GPU PDF parser in C++ and CUDA that turns everyday documents into layout, ordered text, LaTeX formulas, tables and Markdown at up to 19 pages per second."
+description: "A GPU PDF parser in C++ and CUDA that turns everyday documents into layout, ordered text, LaTeX formulas, tables and Markdown at about 20 pages per second."
 date: "2026-11-26"
 repoURL: "https://github.com/logxdx/hyperparse"
 category: "Document AI · CUDA"
@@ -35,7 +35,7 @@ Measured on a 6 GB laptop GPU with 8 page workers:
 
 That's up from 16.5, 13.7 and 12.2 pages/s on the scans, papers and mixed sets in the previous version, about 1.1 to 1.2x faster. With all the models loaded it peaks at about 3.4 GB of GPU memory, and after an idle unload the models reload in about 0.6 s.
 
-For comparison, OXR-1.0, a 4B vision-language model, scores much higher on olmOCR-bench (86.1) but runs at 0.05 pages/s. hyperparse does that benchmark at 12.9 pages/s, about 260x faster, at 55.6.
+For comparison, OXR-1.0, a 4B vision-language model, scores much higher on the 140-page olmOCR-bench subset, 86.1 against hyperparse's 55.6. But it runs at 0.05 pages/s, and hyperparse runs that subset at 12.9 pages/s, about 260x faster. On the full olmOCR-bench, hyperparse scores 60.1, or 65.0 on the development branch.
 
 ## Public benchmarks
 
@@ -63,7 +63,7 @@ On the same 300 ParseBench-1 documents (302 pages) on my laptop:
 | liteparse + OCRia-nano-1, 12 CPU processes | 14.7 |
 | liteparse + OCRia-nano-1, 1 CPU core | 5.6 |
 
-That's about 1.4x the 12-process CPU run and 3.7x a single core. On 30 scanned pages, hyperparse took 2.9 s against 7.4 s for liteparse with OCRia-nano-1 on all cores, about 2.6x faster. On 30 born-digital pages it was 1.3 s against 3.6 s, about 2.8x.
+That's about 1.4x the 12-process CPU run and 3.7x a single core. LlamaIndex's report gives OCRia-nano-1 27.8 pages/s on a 16-vCPU cloud container, which is faster than hyperparse on my laptop. On 30 scanned pages, hyperparse took 2.9 s against 7.4 s for liteparse with OCRia-nano-1 on all cores, about 2.6x faster. On 30 born-digital pages it was 1.3 s against 3.6 s, about 2.8x.
 
 ## Where it still loses
 
@@ -75,7 +75,7 @@ That's about 1.4x the 12-process CPU run and 3.7x a single core. On 30 scanned p
 | Historical print | BHL character error rate | 0.087 | 0.048 |
 | Multilingual pages | OmniParseBench multilingual | 59.8 | 70.7 |
 
-Inline maths is the biggest gap. Every maths point hyperparse gets comes from display formulas, so inline maths never comes out as LaTeX. It also had no page-orientation model, and its Markdown carried no bold, italic or strikeout from the PDF's fonts.
+Inline maths is the biggest gap. In the public version every maths point comes from display formulas, and inline maths never comes out as LaTeX. It also has no page-orientation model, and its Markdown carries no bold, italic or strikeout from the PDF's fonts.
 
 ## Next version
 
@@ -93,7 +93,7 @@ On that branch hyperparse is ahead of OCRia-nano-1 on all four parsing benchmark
 
 ## Reading order and tables
 
-Two small models drove the earlier jump in reading order and tables. On a 140-page olmOCR-bench subset and OmniDocBench, "Before" is the pipeline with simple XY-cut reading order and tables built only from where the text sits.
+Two small models, OrderNet and LayoutNet, gave the biggest jump in reading order and tables. "Before" is the pipeline without them, using simple XY-cut reading order and tables built only from where the text sits. These were measured on a 140-page olmOCR-bench subset and on OmniDocBench.
 
 | Benchmark | Before | After |
 |---|---|---|
@@ -111,7 +111,7 @@ OrderNet, from Indra OCR, is a 0.73M-parameter model that orders a page's text l
 
 LayoutNet, from OCRia-nano-1, is a 4.3M-parameter table-structure model. It runs only on pages where the layout model finds a table, at about 25 ms per table page.
 
-Both run as FP16 TensorRT engines, which match FP32 on every benchmark above and are faster:
+Both run as FP16 TensorRT engines. They matched FP32 on these accuracy tests and are faster:
 
 | Model, 1024 lines or units | FP32 | FP16 | Speedup |
 |---|---|---|---|
@@ -122,7 +122,7 @@ I tried INT8 too. It made LayoutNet slower and cost 1.4 TEDS points, so FP16 is 
 
 ## Text layer first
 
-Most born-digital PDFs already contain correct text, so running OCR on them is wasted work. Each page is routed one of three ways: native text, partial OCR for the regions that need it, or full OCR. The routes column above shows how this plays out, with only 9 of 60 scientific papers' pages needing full OCR.
+Most born-digital PDFs already contain correct text, so running OCR on them is wasted work. Each page is routed one of three ways: native text, partial OCR for the regions that need it, or full OCR. The routes column above shows how this plays out: only 9 of the 60 scientific-paper pages needed full OCR.
 
 Reading the text layer and routing a page costs 0.5 to 8 ms. OCR costs 46 to 91 ms per page, on top of 14 to 30 ms to render it, and a native page skips both. The routing and the recovery of broken glyphs are ported from liteparse.
 
