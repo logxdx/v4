@@ -1,47 +1,46 @@
 ---
-title: "Zeta"
-description: "Local search over photos, videos, audio and notes with one model, down to the exact moment in a video or recording."
-date: "November 2026"
+title: "ZetaDB"
+short: "ZetaDB"
+description: "Local search over screenshots, photos, notes, recordings and video, by keyword, by meaning and by the moment something was said or shown."
+date: "2026-11-24"
 repoURL: "https://github.com/logxdx/ZetaDB"
 # demoURL: ""
 category: "Retrieval · Multimodal"
 areas: [rag]
-tags: ["EmbeddingGemma 2", "LanceDB", "Hybrid search", "FastAPI", "React", "shadcn/ui"]
+tags: ["EmbeddingGemma 2", "SQLite + sqlite-vec", "Hybrid search", "TensorRT", "FastAPI", "Svelte"]
 featured: false
 ---
 
-![Zeta searching "the sea at sunset": a photo and a sunset timelapse at 0:10 as top matches, with ocean waves at 0:25 among the weaker matches](./search.jpg)
+![ZetaDB searching "sunset over the city": city photos at the top, a fireworks clip at 0:20 and film scenes, with weaker matches fading back](./one-search.jpg)
 
-Zeta searches everything on my computer in one go: photos, videos, music, recordings, notes and code. You just describe what you want. Type "the sea at sunset" and it brings back the photo, the timelapse and the recording of the waves.
+ZetaDB is my local search for everything I save: screenshots, photos, notes, recordings and video. One model, EmbeddingGemma 2, puts pictures, text, sound and video in the same space, so I can describe what I remember and it finds it in whatever form I saved it.
 
-It started in 2025 as a CLIP and LanceDB project for text-to-image search. In November 2026 I rebuilt it around EmbeddingGemma 2, one model that understands pictures, sound, video and text in the same space.
+It finds the moment inside long media. Audio is embedded in 30-second windows every 25 seconds, skipping near-silent ones, and video in 10-second scenes of 5 frames plus the soundtrack. In the demo library, "why we go to the moon" opens a 17-minute speech at 8:20, where it's said.
 
-It doesn't stop at the file. It points to 0:10 in the video where the sun meets the water, 0:25 in the recording where the waves roll in, or the exact paragraph in a long document. You can also search with a file: drop in a photo or a song to find similar ones, or mix a picture with a few words.
+It also reads what's in images. PP-OCRv6 pulls the text out of screenshots, receipts and whiteboards, LFM3-VL 2B writes a plain description of each image, and Needle extracts people, dates, links and to-dos from notes. "what did I spend at the cafe" finds the receipt and knows it came to $35.65.
 
-Everything runs locally. The model, the index and the files stay on the machine, and after a one-time model download it works offline.
+Images get tags from Eye, an image tagger from Desert Ant Labs, used with permission. Each tag has its own calibration curve. Confident tags are applied, unsure ones wait for a quick yes or no, and a tag I set myself is never overwritten.
 
-Every file is split into segments, and each segment gets its own vector:
+Search runs several retrievers and merges them with reciprocal rank fusion. Each one ranks the items its own way, and the merge rewards items that rank well in more than one list.
 
-| Kind | How it's split |
+| Retriever | Weight |
 | --- | --- |
-| Text and code | ~1,800-character chunks with 200 characters of overlap, each titled with its heading, path or filename |
-| Audio | 30 s windows every 25 s, silence skipped |
-| Video | 10 s windows of 5 frames, plus the soundtrack as audio windows |
-| Images | decoded at up to 1,024 px, 280-token default budget |
+| Tags | 1.30 |
+| Keywords (SQLite FTS5) | 1.00 |
+| Meaning of the item | 1.00 |
+| Visual similarity | 0.90 |
 
-The audio windows matter a lot. EmbeddingGemma 2 only hears the first 30 seconds of an audio input, so without them the rest of a song or podcast would be invisible!
+The constant is k = 60, the standard value. On top of that, moments inside audio and video have their own retriever. Results fade back by how well they match, and every item shows what it's close to, so I can follow links across months of saved things.
 
-Search combines vector search over segments with LanceDB full-text search over names and text. One problem is that text scores higher than images or audio for the same topic, so with raw scores notes would crowd out photos. Each score is turned into a per-modality z-score first, which keeps results fair across kinds of media. Files are then ranked by their best segment.
+Everything is stored in one SQLite file, with sqlite-vec for the vectors and FTS5 for keywords. The backend is FastAPI and the interface is Svelte.
 
-Ingestion is tuned for a 6 GB laptop GPU. Files are read and segmented in parallel while the model embeds the current batch. An out-of-memory error halves the batch and retries, and a corrupt file is found by bisection so only that file fails.
+It's built to fit a 6 GB laptop GPU. Models run on TensorRT FP16 where they can, then CUDA, then CPU. The GPU work is split into two pools that are never loaded at the same time, and the text side of EmbeddingGemma 2 runs on the CPU, so a search never waits for the GPU.
 
-| Kind (segments per second) | Batch 1 | Best batch |
+| Model | Time | GPU memory |
 | --- | --- | --- |
-| Text chunks | 45 | 95 (batch 8) |
-| Audio windows | 17 | 40 (batch 4) |
-| Images | 9.2 | no gain from batching |
-| Video windows | 3.4 | no gain from batching |
+| Eye tags | 34.8 ms per image | 560 MB |
+| PP-OCR text | 0.248 s per image | 414 MB |
+| EmbeddingGemma 2 encoders | 1.03 s per image | 1070 MB |
+| LFM3-VL 2B captions | ~2.0 s per image | 2020 MB |
 
-On 129 mixed files (48 photos, 64 notes, 12 audio, 4 video), indexing takes 8.8 s with the tuned defaults and 5.9 s with a smaller image budget. The same set takes about 5 minutes on CPU.
-
-The backend is Python with FastAPI and LanceDB. The interface is React with Tailwind and shadcn/ui, with a justified photo grid, videos that play on hover, light and dark modes and a ⌘K palette.
+Ingesting a file peaks at 2.2 GB on the card. Every model runs on my machine and nothing is uploaded.
