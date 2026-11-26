@@ -35,23 +35,23 @@ Measured on a 6 GB laptop GPU with 8 page workers:
 
 That's up from 16.5, 13.7 and 12.2 pages/s on the scans, papers and mixed sets in the previous version, about 1.1 to 1.2x faster. With all the models loaded it peaks at about 3.4 GB of GPU memory, and after an idle unload the models reload in about 0.6 s.
 
-For comparison, OXR-1.0, a 4B vision-language model, scores much higher on the 140-page olmOCR-bench subset, 86.1 against hyperparse's 55.6. But it runs at 0.05 pages/s, and hyperparse runs that subset at 12.9 pages/s, about 260x faster. On the full olmOCR-bench, hyperparse scores 60.1, or 65.0 on the development branch.
+For comparison, OXR-1.0, a 4B vision-language model, scores much higher on olmOCR-bench, 86.1 on a 140-page subset, but runs at 0.05 pages/s. hyperparse runs olmOCR-bench at 10.1 pages/s, about 200x faster, and scores 65.0 on the full benchmark.
 
 ## Public benchmarks
 
-I ran the public version of hyperparse through five full public benchmarks with their official scorers. The other columns come from LlamaIndex's OCRia-nano-1 technical report. I re-ran OCRia-nano-1 myself on ParseBench-1, ParseBench-2 and OmniParseBench and got the report's numbers back.
+I ran hyperparse through five full public benchmarks with their official scorers. The other columns come from LlamaIndex's OCRia-nano-1 technical report. I re-ran OCRia-nano-1 myself on ParseBench-1, ParseBench-2 and OmniParseBench and got the report's numbers back.
 
 | Benchmark | hyperparse | OCRia-nano-1 | Indra 1.1.2 | Marker (fast) | LiteParse (Tesseract) |
 |---|---|---|---|---|---|
-| ParseBench-2 (4,317 pages) | **59.5** | 59.2 | 55.1 | 52.5 | 48.7 |
-| OmniParseBench (2,937 pages) | 70.9 | **74.8** | 70.9 | 69.8 | 42.3 |
-| ParseBench-1 (2,079 docs) | 51.9 | **52.7** | 42.6 | 40.4 | 40.5 |
-| olmOCR-bench (1,403 PDFs) | 60.1 | **60.9** | 60.8 | 60.8 | 45.7 |
-| BHL character error rate (lower is better) | 0.087 | **0.048** | 0.062 | 0.067 | 0.275 |
+| ParseBench-2 (4,317 pages) | **61.7** | 59.2 | 55.1 | 52.5 | 48.7 |
+| OmniParseBench (2,937 pages) | **76.8** | 74.8 | 70.9 | 69.8 | 42.3 |
+| ParseBench-1 (2,079 docs) | **56.5** | 52.7 | 42.6 | 40.4 | 40.5 |
+| olmOCR-bench (1,403 PDFs) | **65.0** | 60.9 | 60.8 | 60.8 | 45.7 |
+| BHL character error rate (lower is better) | 0.085 | **0.048** | 0.062 | 0.067 | 0.275 |
 
-hyperparse is first on ParseBench-2, and well ahead of Indra, Marker and LiteParse on ParseBench-1. On olmOCR-bench the top four parsers are within 0.8 of each other. It's 0.8 behind OCRia-nano-1 on ParseBench-1 and 3.9 behind on OmniParseBench, where it ties Indra.
+hyperparse is first on all four parsing benchmarks. It leads OCRia-nano-1 by 2.5 points on ParseBench-2, 2.0 on OmniParseBench, 3.8 on ParseBench-1 and 4.1 on olmOCR-bench. Historical print, measured by BHL, is the one benchmark where it's behind.
 
-Layout is where it leads most. On ParseBench-2 layout it scores 80.3 against OCRia-nano-1's 72.4, and on ParseBench-1 layout 71.4 against 53.1. One caveat is that the other parsers run on CPU, while hyperparse needs an NVIDIA GPU.
+Layout is where it leads most. On ParseBench-2 layout it scores 82.1 against OCRia-nano-1's 72.4, and on ParseBench-1 layout 71.4 against 53.1. One caveat is that the other parsers run on CPU, while hyperparse needs an NVIDIA GPU.
 
 ## Speed against CPU parsers
 
@@ -63,33 +63,36 @@ On the same 300 ParseBench-1 documents (302 pages) on my laptop:
 | liteparse + OCRia-nano-1, 12 CPU processes | 14.7 |
 | liteparse + OCRia-nano-1, 1 CPU core | 5.6 |
 
-That's about 1.4x the 12-process CPU run and 3.7x a single core. LlamaIndex's report gives OCRia-nano-1 27.8 pages/s on a 16-vCPU cloud container, which is faster than hyperparse on my laptop. On 30 scanned pages, hyperparse took 2.9 s against 7.4 s for liteparse with OCRia-nano-1 on all cores, about 2.6x faster. On 30 born-digital pages it was 1.3 s against 3.6 s, about 2.8x.
+That's about 1.4x the 12-process CPU run and 3.7x a single core. LlamaIndex's report gives OCRia-nano-1 27.8 pages/s on a 16-vCPU cloud container, which is faster than hyperparse on my laptop.
+
+On 30 scanned pages, hyperparse took 2.9 s against 7.4 s for liteparse with OCRia-nano-1 on all cores, about 2.6x faster. On 30 born-digital pages it was 1.3 s against 3.6 s, about 2.8x.
+
+## Latest improvements
+
+The last round of changes added page orientation, inline text styles, TeX maths rebuilt from the PDF's glyphs, duplicate-box suppression and table clean-up.
+
+| Benchmark | Before | Now | Change |
+|---|---|---|---|
+| ParseBench-2 | 59.5 | **61.7** | +2.2 |
+| ParseBench-1 | 51.9 | **56.5** | +4.6 |
+| OmniParseBench | 70.9 | **76.8** | +5.9 |
+| olmOCR-bench | 60.1 | **65.0** | +4.9 |
+| BHL character error rate | 0.087 | **0.085** | slightly lower |
+
+The TeX maths gave the biggest single gain. Before it, every maths point came from display formulas, and inline maths never came out as LaTeX. On OmniParseBench's arXiv maths suite, OCRia-nano-1 scores 67.1, and hyperparse now scores 75.5.
+
+Page orientation helped rotated scans the most. On OmniParseBench's rotation and skew suite, hyperparse went from 61.0 to 78.5, against OCRia-nano-1's 78.0.
 
 ## Where it still loses
 
 | Weak spot | Benchmark | hyperparse | OCRia-nano-1 |
 |---|---|---|---|
-| Inline maths | OmniParseBench arXiv maths | 35.0 | 67.1 |
-| Text formatting (bold, underline, strikeout) | ParseBench-2 formatting | 75.3 | 82.2 |
-| Rotated or skewed pages | OmniParseBench rotation and skew | 61.0 | 78.0 |
-| Historical print | BHL character error rate | 0.087 | 0.048 |
-| Multilingual pages | OmniParseBench multilingual | 59.8 | 70.7 |
+| Historical print | BHL character error rate | 0.085 | 0.048 |
+| Multilingual pages | OmniParseBench multilingual suites | 62 to 64 | 70.1 to 70.7 |
+| Text formatting | ParseBench-2 formatting | 81.2 | 82.2 |
+| Semantic formatting | ParseBench-1 formatting | 53.5 | 54.9 |
 
-Inline maths is the biggest gap. In the public version every maths point comes from display formulas, and inline maths never comes out as LaTeX. It also has no page-orientation model, and its Markdown carries no bold, italic or strikeout from the PDF's fonts.
-
-## Next version
-
-A development branch fixes several of those weak spots. It adds page orientation, inline text styles, TeX maths rebuilt from the PDF's glyphs, duplicate-box suppression and table clean-up. It isn't in the public repo yet.
-
-| Benchmark | Public version | Development branch | OCRia-nano-1 |
-|---|---|---|---|
-| ParseBench-2 | 59.5 | **61.7** | 59.2 |
-| ParseBench-1 | 51.9 | **56.5** | 52.7 |
-| OmniParseBench | 70.9 | **76.8** | 74.8 |
-| olmOCR-bench | 60.1 | **65.0** | 60.9 |
-| BHL character error rate | 0.087 | 0.085 | **0.048** |
-
-On that branch hyperparse is ahead of OCRia-nano-1 on all four parsing benchmarks. OmniParseBench went up 5.9 points, mostly from the TeX maths, and olmOCR-bench went up 4.9. Historical print is still the one clear loss.
+Historical print is the biggest gap. My best guess is the image size: those scans are 3,000 to 3,700 px tall, and the OCR step shrinks them to a 2,200 px long side, about 60% of their size. Multilingual pages suffer because there's no routing by script, and handwriting is still weak at 13 to 16 on OmniParseBench.
 
 ## Reading order and tables
 
