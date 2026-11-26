@@ -11,82 +11,56 @@ tags: ["Signal processing", "Deep learning", "Edge inference"]
 featured: false
 ---
 
-## Project Motivation and Overview
+This project monitors occupancy in sensitive places where cameras or microphones are not acceptable for privacy reasons. Low-cost geophones sense structural vibrations, and the system detects and classifies human and animal presence from their gait and footstep signatures.
 
-The project addresses the critical need for **privacy-preserving** occupancy monitoring in sensitive environments where traditional camera or microphone surveillance is unsuitable. By utilizing **structural vibration sensing** via low-cost geophones, the system detects and classifies human and animal presence based on their unique gait and footstep signatures.
+Vibration sensing keeps working in darkness, when the view is blocked and in bad weather. The goal is a lightweight multi-class detector that tells human, animal and noise signals apart and runs on embedded hardware such as microcontrollers or single-board computers.
 
-This method provides robust operation in challenging, non-visual conditions such as darkness, visual occlusion, and adverse weather. The core objective is to create a lightweight, multi-class detection system capable of distinguishing between human, animal, and noise signals efficiently on embedded hardware like microcontrollers or single-board computers.
+## Signal processing
 
----
+A geophone records the raw signal at 8 kHz. For event detection the signal is downsampled to 500 Hz, 16x fewer samples, and filtered into three frequency bands: 10–60 Hz, 60–120 Hz and 120–180 Hz. A Hilbert envelope is taken for each band.
 
-## Data Preparation and Pre-processing
+The three envelopes are averaged into one detection signal. Footstep events are found with peak detection and parabolic interpolation.
 
-### 1. Raw Signal Acquisition and Filtering
+Each peak is then checked with a continuous wavelet transform (CWT) using a Morlet wavelet. A peak counts as a footstep only if its CWT ridge magnitude is above the 70th percentile, which filters out low-energy noise events.
 
-The process begins with the raw audio signal captured by a geophone sensor at 8KHz.
+## Synthetic multi-occupancy data
 
-- The raw audio is first **downsampled to 500 Hz**.
-- To extract relevant signal energy, the data is processed across three distinct frequency bands: 10–60 Hz, 60–120 Hz, and 120–180 Hz.
-- The **Hilbert Envelope** is extracted for each of these three bandpass filtered signals.
+Data is scarce, and the hardest case is several people walking at the same time (multi-occupancy). A synthetic data pipeline covers both problems in three steps:
 
-### 2. Footstep Event Extraction and Validation
+1. Random users and their processed footstep events are selected, and random slices are cut from the full audio files.
+2. The time series of the overlapping segments are summed (superposition), with a distance gain to simulate different distances from the sensor.
+3. Gaussian noise, scaled from the computed signal power, is added to the mix.
 
-The three Hilbert Envelopes are averaged (fused) to create a single detection signal. Footstep events are identified using **Peak Detection with Parabolic Interpolation**. To ensure only high-quality signals are retained, a validation step is crucial:
+Each result is a mixed sample with overlapping footsteps from several sources, for training the model on multi-source signals.
 
-- The **Continuous Wavelet Transform (CWT)** is computed using a Morlet Wavelet.
-- The CWT Ridge Magnitude is extracted.
-- A detected peak is validated as a true footstep event only if its corresponding CWT Ridge Magnitude is **above the 70th percentile**, filtering out low-energy noise events.
+## Models
 
----
+The final models take the raw 1D vibration waveform: a 2.5-second window at 8 kHz, which is 20,000 samples. The raw waveform keeps the fine timing of the heel strike, toe-off and surface resonance, which is lost when the signal is turned into a time-frequency image.
 
-## Synthetic Data Generation Pipeline
+The baseline, Footstep1DNet, is a small 1D CNN built for fast inference on microcontrollers. It has four convolutional blocks with shrinking kernel sizes ($25 \rightarrow 15 \rightarrow 9 \rightarrow 5$). It is fast, but this shallow design has a high false negative rate, especially for users with light or subtle gaits, which limits its use in real deployments.
 
-To address data scarcity and, critically, to train the model on the challenging scenario of **simultaneous multiple footsteps (multi-occupancy)**, a synthetic data pipeline was developed.
+The proposed model, FootstepResNet, is a deeper network built from residual blocks. Its first layer is a Conv1D with a kernel of size 129, which covers about 16 ms of the 8 kHz input. That window is sized to the physics of a footstep: the first high-energy impact, the coupling of foot and surface, and the resonant decay.
 
-1.  **Selection and Slicing:** Random users and their processed footstep events are selected. Random slices are extracted from the full audio files.
-2.  **Superposition:** Realistic signal mixtures are generated by **computationally summing (superposition)** the time-series signals of the overlapping segments. This process includes applying a distance gain to simulate varied physical distances from the sensor.
-3.  **Noise Injection:** Gaussian noise is generated based on a calculation of the signal power and then added to the mixed sample.
+Three stacked residual blocks with skip connections follow. They keep deep training stable, prevent vanishing gradients and let the model learn the longer gait patterns that separate users with similar signatures.
 
-This process yields a synthetic mixed sample that robustly trains the model for multi-source separation.
+## Results
 
-### Model Input Representation
+FootstepResNet missed fewer footsteps and raised fewer false alarms than the baseline.
 
-The final models operate directly on the **raw 1D vibration waveform**, specifically a 2.5-second window sampled at 8 kHz (20,000 samples). This choice is intentional, as it preserves the fine-grained temporal dynamics of the heel-strike, toe-off, and surface resonance, avoiding feature loss that occurs in Time-Frequency image conversion.
+| Metric | Baseline (Footstep1DNet) | Proposed (FootstepResNet) | Change |
+| :-- | :-- | :-- | :-- |
+| False negatives (FN) | 723 | 183 | 3.95x fewer (about 4x) |
+| False positives (FP) | 331 | 170 | 1.95x fewer (about 2x) |
+| Accuracy | Varied across users | 96–99% across users | Higher |
 
----
+It also recovered the "problematic" users that the baseline kept missing. For those users, false negatives dropped from 331 to 2, about 165x fewer.
 
-## Deep Learning Modeling
+## Limitations and future work
 
-### Baseline Model: Footstep1DNet
+The classifier is closed-set. It is trained on a fixed set of identities and forces any unknown intruder into one of them, which can lead to silent failures. Future work targets open-set recognition, so the system can detect people it has never seen.
 
-The initial model was a lightweight, fast-inference 1D-CNN designed for microcontrollers. It consisted of four convolutional blocks with progressively decreasing kernel sizes ($25 \rightarrow 15 \rightarrow 9 \rightarrow 5$). While fast, this shallow architecture had a fundamental limitation: a high False Negative (FN) rate, particularly for users with subtle or light-footed gaits, which severely limits its usability in real-world deployment.
+For deployment, FootstepResNet is to be optimized for the edge with post-training INT8 quantization, pruning and TFLite runtime optimization for microcontrollers and single-board computers.
 
-### Proposed Model: FootstepResNet
+The system does multi-label detection but does not yet separate the sources. Moving from detection to explicit source separation would allow accurate counting and tracking when many footsteps overlap.
 
-The proposed architecture is a deeper, physics-aware network utilizing Residual Blocks to overcome the baseline's generalization failures.
-
-- **Physics-Aware Stem:** The network begins with a large Conv1D kernel of size **129**. On the 8 kHz input, this large receptive field captures approximately **16ms** of high-resolution data, effectively modeling the initial high-energy impact, foot-surface coupling, and resonant decay structure of the footstep event.
-- **Residual Depth:** It employs three stacked Residual Blocks with skip connections. This design ensures stable, deep feature learning, prevents vanishing gradients, and allows the model to learn complex, long-range gait patterns necessary to distinguish subtle intra-user signatures.
-
-### Performance and Error Reduction
-
-The FootstepResNet demonstrated dramatic improvements in robustness and accuracy:
-
-| Metric                   | Baseline (Footstep1DNet) | Proposed (FootstepResNet) | Improvement            |
-| :----------------------- | :----------------------- | :------------------------ | :--------------------- |
-| **False Negatives (FN)** | 723                      | **183**                   | **~4x Reduction**      |
-| **False Positives (FP)** | 331                      | **170**                   | **~2x Reduction**      |
-| **Accuracy**             | Varied across users      | **96–99%** (across users) | Significantly enhanced |
-
-Crucially, the new model showed an excellent ability to recover the detection of "problematic" users who were consistently missed by the baseline, whose False Negative count dropped from 331 to just 2.
-
----
-
-## Limitations and Future Work
-
-While highly successful, the project identifies key challenges for real-world deployment:
-
-- **Closed-Set Recognition:** The current classifier is trained on a fixed set of identities and forces any "unknown" intruder into an existing class, which can lead to silent failures. Future work focuses on **Open-Set Recognition** to enable detection of previously unseen individuals.
-- **Edge Optimization:** To ensure practical deployment, the FootstepResNet will undergo **edge optimization** techniques, including Post-Training Quantization (INT8), pruning, and TFLite runtime optimization for microcontrollers and single-board computers.
-- **Multi-Source Separation:** The system currently performs multi-label detection but lacks true signal disentanglement. Future work aims to move from detection to explicit **source separation** to enable accurate counting and tracking in highly dense, overlapping footstep scenarios.
-- **Robustness Testing:** Generalization will be tested across diverse surfaces (Wood, Concrete, Tile, Soil/outdoor terrains) to address domain shift challenges.
+Generalization will also be tested on other surfaces, such as wood, concrete, tile, and soil or outdoor ground, to handle domain shift.

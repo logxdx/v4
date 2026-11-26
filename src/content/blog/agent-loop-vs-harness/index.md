@@ -24,6 +24,8 @@ A quick word on tools first. A tool is a function the model can ask you to run. 
 
 I'll use one example the whole way through. A coding agent is asked to fix a failing test. It has four tools (`read_file`, `grep`, `apply_patch` and `run_tests`) and a copy of the repository to work in.
 
+## The loop as real code
+
 Here's the loop from the image as real code you can run against the OpenAI Responses API. It has one toy tool that multiplies two numbers.
 
 ```python
@@ -81,6 +83,8 @@ Fourth, it has a brake. `while True` never gives up, and a confused model will h
 
 That's enough to run an agent. I wouldn't leave it running alone overnight, though.
 
+## What a harness adds
+
 Here's what happens between two model calls once a proper harness is in place. The model's part is one line.
 
 ```text
@@ -104,20 +108,30 @@ Every line in that block is there because something broke without it. Here's the
 | Output limit that keeps head and tail | The traceback at the end of the output gets cut off |
 | Separate stop statuses | Hitting the turn cap gets counted as a success |
 | Token and dollar budgets | Cost grows with the square of the number of turns |
-| One retry layer | Retries multiply and never show up in your trace |
+| One retry layer | Retries add up and never show up in your trace |
 | Stable start of the prompt | You lose the prompt cache discount |
 | Sandbox first, approvals second | People approve prompts without reading them |
 | Checkpoint after every tool result | A side effect runs twice after a crash |
 
-Let's start with tools. The model never touches anything directly. Every read and every write goes through a tool you chose to offer and chose to run.
+## The tool layer
+
+The model never touches anything directly. Every read and every write goes through a tool you chose to offer and chose to run.
 
 The tool definitions (names, descriptions and argument schemas) are sent with every request. So they are part of the prompt, and the way you design them changes how well the model works.
 
 The best evidence for this is old, but it has held up. It comes from the SWE-agent ablations on SWE-bench Lite with GPT-4 Turbo. An ablation is a test where you take away one piece at a time and see how much the score drops.
 
-The full interface solved 18.0% of issues. Removing the edit tool dropped that to 10.3%. Showing the whole file, in place of a viewer that shows a bounded window of it, dropped it to 12.7%.
+| Tool setup | Issues solved |
+|---|---|
+| Full interface | 18.0% |
+| No edit tool | 10.3% |
+| Whole file shown, in place of a viewer with a bounded window | 12.7% |
+| Iterative search tool | 12.0% |
+| No search tool at all | 15.7% |
 
-And an iterative search tool scored 12.0%. That's WORSE than having no search tool at all, which scored 15.7%!
+The full interface solved about 1.75 times as many issues as the version with no edit tool (18.0% vs 10.3%).
+
+And the iterative search tool, at 12.0%, did WORSE than having no search tool at all, at 15.7%!
 
 From results like that, here's what I treat as the minimum for a tool layer.
 
@@ -137,7 +151,7 @@ Then bound every output, and keep the end of it. When the agent runs the test su
 
 So keep the head and the tail. Save the full text to a file and put the path in the result. Then the model can page through it if it needs to.
 
-Here's the code.
+Here's the code. My harness cuts any result over 16,000 characters this way by default.
 
 ```python
 def truncate_text(text: str, max_chars: int, full_output_path: str | None = None) -> str:
@@ -155,7 +169,11 @@ Last, run tools in parallel only when they are read-only. Models often ask for s
 
 So mark tools as read-only explicitly. Run everything else one at a time, in order.
 
-Now stopping. The loop in the image has one way to stop: the model stops asking for tools. A harness needs several, because the model may never stop, it may stop for the wrong reason, or you may need to stop it yourself.
+## Stopping, budgets and retries
+
+### Run statuses
+
+The loop in the image has one way to stop: the model stops asking for tools. A harness needs several, because the model may never stop, it may stop for the wrong reason, or you may need to stop it yourself.
 
 I record each way of stopping as its own run status.
 
@@ -175,6 +193,8 @@ Treat truncation as failure. A response that hit the output-token limit may carr
 
 Check budgets before each model call, so the run stops before it spends too much.
 
+### Token and dollar budgets
+
 A turn cap doesn't limit cost, and the maths shows why.
 
 The model is stateless. It remembers nothing between calls, so every turn resends the whole transcript so far. You pay for every token you send, and a token is a small chunk of text, often a short word.
@@ -191,37 +211,53 @@ The first term grows in a straight line with the number of turns. The second ter
 
 Now put in some numbers. With $p = 8{,}000$, $a = 3{,}000$ and 30 turns, the final transcript is 95,000 tokens.
 
-But the run sends about 1.5 MILLION tokens in total. That's roughly 16 times as much as the final transcript.
+| Turn | Tokens sent that turn |
+|---|---|
+| 1 | 8,000 |
+| 2 | 11,000 |
+| 10 | 35,000 |
+| 30 | 95,000 |
+| Whole run | 1,545,000 |
+
+But the run sends about 1.5 MILLION tokens in total. That's roughly 16 times as much as the final transcript (1,545,000 / 95,000).
 
 So cap tokens, dollars and wall-clock time as well as turns. Server-side conversation state, where the provider keeps the transcript for you, doesn't help here either. It saves bandwidth, and you still pay for the tokens.
 
-Next, retries. Model calls fail: rate limits, overloaded servers, dropped connections.
+### Retries
+
+Model calls fail: rate limits, overloaded servers, dropped connections.
 
 Some of those clear up if you wait, and some never will. The harness has to know which is which.
 
 Retry 408, 409, 429, 5xx, timeouts and connection errors. Use capped exponential backoff with full jitter.
 
-Backoff means you wait longer after each failure, up to a cap. Full jitter means you sleep a random time between zero and that cap. That way a fleet of clients doesn't retry in lockstep.
+Backoff means you wait longer after each failure, up to a cap. Full jitter means you sleep a random time between zero and that cap. That way a fleet of clients doesn't retry in lockstep. My defaults are 5 attempts, a 1-second base and a 30-second cap.
 
 Honour the `retry-after` header when the server sends one. It tells you how long to wait.
 
 Don't retry 400s, auth errors, or anything that means you're out of quota or hit a spend cap. Waiting won't add credit. OpenAI also counts failed requests toward rate limits, so blind retries make 429s worse.
 
-The less obvious rule is to have one retry layer. The vendor SDK client retries by default.
+The less obvious rule is to have one retry layer. The OpenAI and Anthropic SDK clients both retry twice by default.
 
 An agent SDK runner might retry too, and then your harness retries on top.
 
-Stack all three and the attempts multiply. Each one can wait out the full request timeout, and none of the inner ones show up in your trace.
+Stack all three and the attempts add up. Each one can wait out the full request timeout, and none of the inner ones show up in your trace.
+
+Even a single layer can stall for a long time. With 5 attempts and a 600-second timeout on each, one turn can take roughly 50 minutes before it gives up.
 
 I set the vendor clients to `max_retries=0` and make one module the only place that retries. Then every attempt is visible and counted.
 
 Tool calls are never retried by the harness. A tool failure goes back to the model as data, and the model decides what to do.
 
-Now the context, meaning everything you send the model on each call. Both major providers cache by prefix.
+## Context and caching
 
-If the start of your request matches a recent request byte for byte, those tokens are billed at a steep discount. The first changed byte ends the match.
+The context is everything you send the model on each call. Both major providers cache by prefix.
 
-That turns the layout of your context into a caching problem. Tool definitions and system instructions go first, and they never change during a run. No timestamps, no "today is...", and no reordering the tools.
+If the start of your request matches a recent request byte for byte, those tokens are billed at about a tenth of the normal input price. The first changed byte ends the match.
+
+In the 30-turn example above, at one model's list prices in September 2026, the 1,545,000 input tokens cost about \$3.09 with no caching. With a warm cache the same run costs about \$0.53, roughly 6 times cheaper (\$3.09 / \$0.53).
+
+So the layout of your context becomes a caching problem. Tool definitions and system instructions go first, and they never change during a run. No timestamps, no "today is...", and no reordering the tools.
 
 The transcript is append-only. If the sandbox mode or the working directory changes, add a new message saying so. Leave the first message alone.
 
@@ -231,13 +267,17 @@ You can summarise the run into a handoff note and restart from that note. Or you
 
 Both ways rewrite the prefix, so the next turn pays to cache it all again. A harness that compacts often can cost more than one that never caches at all.
 
-So compact in one step, at a high threshold. Reach for the cheaper levers first. Those are bounded tool output, paging in `read_file`, and subagents that hand back a short answer in place of their whole working context.
+So compact in one step, at a high threshold. My harness uses 150,000 tokens by default. Reach for the cheaper levers first. Those are bounded tool output, paging in `read_file`, and subagents that hand back a short answer in place of their whole working context.
 
-The best public example of the context layer mattering comes from ARC-AGI-3. OpenAI reported that the same model scored 13.3% with the benchmark's official harness and 38.3% with OpenAI's own.
+The best public example of the context layer mattering comes from ARC-AGI-3. OpenAI reported that the same model scored 13.3% with the benchmark's official harness and 38.3% with OpenAI's own. That's nearly 3 times the score (38.3 / 13.3 ≈ 2.9), using about six times fewer output tokens.
 
-The official harness threw away the model's reasoning items after every action and truncated the history. OpenAI's harness kept the reasoning and compacted instead.
+The official harness threw away the model's reasoning items after every action and truncated the history past 175,000 characters. OpenAI's harness kept the reasoning and compacted instead.
 
-Next, safety. A rule in the prompt is only a suggestion.
+## Safety and crash recovery
+
+### Sandbox and approvals
+
+A rule in the prompt is only a suggestion.
 
 "Don't push to main" in the system instructions is something the model will usually follow, and usually isn't good enough. Safety needs two separate controls.
 
@@ -248,9 +288,9 @@ Next, safety. A rule in the prompt is only a suggestion.
 
 The order matters: sandbox first, approvals second. Human approval wears out with use.
 
-Anthropic's data has people approving 93 to 97% of permission prompts. When everything asks, people stop reading.
+Anthropic's data has people approving 93 to 97% of permission prompts. When everything asks, people stop reading. In a study of 1,053 testers, people caught a planted dangerous command only 13.6% of the time.
 
-So let the sandbox make most actions safe to run without asking. Keep approvals for the few actions that can't be undone or that reach outside the sandbox.
+So let the sandbox make most actions safe to run without asking. Sandboxing cut Claude Code's permission prompts by 84% inside Anthropic. Keep approvals for the few actions that can't be undone or that reach outside the sandbox.
 
 Two properties of the policy layer I treat as non-negotiable. The first is to fail closed.
 
@@ -264,7 +304,9 @@ The string `"/workspace/../etc/passwd"` starts with `/workspace`, but it points 
 
 Keep the harness's own logs and checkpoints out of the model's reach too. An agent that can rewrite its checkpoint can plant a transcript that a resume will trust.
 
-Now crashes. An agent that runs for an hour will meet a closed laptop lid, a deploy, an OOM kill (the system killing a process that used too much memory) or a Ctrl-C.
+### Checkpoints
+
+An agent that runs for an hour will meet a closed laptop lid, a deploy, an OOM kill (the system killing a process that used too much memory) or a Ctrl-C.
 
 A checkpoint is a saved copy of the transcript that you can resume from. Where you save it decides how much a crash costs.
 
@@ -293,7 +335,9 @@ So side-effecting tools need idempotency keys. An idempotency key is an ID for o
 
 Derive the key from what the call means. Record the keys of completed calls somewhere durable. And pass the key on to any external service that accepts one.
 
-Then logs and tests. When a run goes wrong, you want to know what the model saw on turn 23, what it returned, what the tool did and what it cost. Only the harness sees every call, so only the harness can record it.
+## Logs and tests
+
+When a run goes wrong, you want to know what the model saw on turn 23, what it returned, what the tool did and what it cost. Only the harness sees every call, so only the harness can record it.
 
 An append-only JSONL event log is enough to start. JSONL means one JSON object per line. Flush the file after every line.
 
@@ -305,6 +349,8 @@ A scripted fake model returns fixed turns, and it can raise an error on cue. Wit
 
 Test the wire format separately. Run the real SDK against a mock HTTP transport, and check that provider items are replayed byte for byte. Leave the model itself to evals with repeated trials.
 
+## How much the harness matters
+
 None of this means the harness matters more than the model. The Terminal-Bench 2.0 authors looked at their own results and wrote that "model selection is usually more important than agent scaffold".
 
 mini-swe-agent is about 100 lines, with bash as its only tool. It reports more than 74% on SWE-bench Verified, though that number is self-reported. A tiny harness is enough for a strong model.
@@ -313,7 +359,16 @@ But the same benchmark shows the harness moving a single model's score by up to 
 
 LangChain reports taking its CLI agent from 52.8% to 66.5% on that benchmark, with the model held fixed. Part of the gain came from forcing a verification pass before the agent was allowed to finish.
 
+| What changed | Before | After | Gain |
+|---|---|---|---|
+| Model, same harness (Codex CLI, GPT-5-Nano vs GPT-5.2) | 11.5% | 62.9% | about 51 points |
+| Harness, same model (GPT-5, worst vs best) | 33.9% | 49.6% | 15.7 points |
+| Harness, same model (LangChain CLI agent) | 52.8% | 66.5% | 13.7 points |
+| Harness, same model (ARC-AGI-3) | 13.3% | 38.3% | 25 points |
+
 The way I see it, the model sets the ceiling and the harness decides how close you get. The harness also decides whether you can ship at all. No benchmark measures whether your agent leaked a secret, double-charged a customer or lost an hour of work to a deploy.
+
+## What I'd do differently
 
 If I built one again, I'd do a few things differently.
 

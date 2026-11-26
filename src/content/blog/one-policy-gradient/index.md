@@ -16,6 +16,8 @@ It might change what multiplies the log-probability. It might add an importance 
 
 So in this post I start from REINFORCE and walk through each method as a small edit to it. It's a long one, because I want to show the maths and the code. I'll keep each step small.
 
+## Text generation as RL
+
 First, the setup. We treat text generation as an RL problem. The state is the prompt plus the tokens written so far, and the action is the next token.
 
 The policy $\pi_\theta$ is the model's softmax over the vocabulary, and $\theta$ is the model's weights. Moving from one state to the next is simple: you append the token.
@@ -29,6 +31,8 @@ J(\theta) = \mathbb{E}_{x \sim \mathcal{D},\; y \sim \pi_\theta(\cdot|x)}\big[ R
 $$
 
 This says: pick a prompt $x$ from the dataset, let the model write a response $y$, and score it with $R$. $J$ is the average score over many tries.
+
+## The REINFORCE estimator
 
 The problem is that $\theta$ changes which responses get sampled. You can't take a gradient through the act of sampling.
 
@@ -68,6 +72,8 @@ $w_t$ is a ratio, and $\hat A_t$ is the weight on each token. In plain REINFORCE
 
 Every other method picks these two differently. Then it adds a clip, a normaliser, and maybe a KL term. I'll explain each of those as they come up.
 
+## Baselines and advantages
+
 The first edit is a baseline. REINFORCE is unbiased, which means that on average it points the right way. But it's very noisy, because one number multiplies thousands of token gradients.
 
 It gets worse if every reward is positive. Then every sampled token gets pushed up, and learning depends on the good ones being pushed up a bit harder than the bad ones.
@@ -99,7 +105,7 @@ The choice of baseline is the most useful way I know to sort these methods into 
 | Group mean, then divide by group std | GRPO |
 | Mean over the whole global batch | REINFORCE++ |
 
-$G$ is the number of responses you sample for each prompt. RLOO stands for REINFORCE leave-one-out. ReMax uses the score of the model's greedy answer, the one where it always picks the most likely token, as the bar to beat.
+$G$ is the number of responses you sample for each prompt. RLOO stands for REINFORCE leave-one-out. ReMax uses the score of the model's greedy answer, the one where it always picks the most likely token, as the bar to beat. With no value model to hold, the ReMax paper reports about 46% less GPU memory than PPO for a 7B model.
 
 The classic choice is a learned critic. A critic, also called a value network $V_\phi$, is a second model trained to predict how much reward to expect from a given state.
 
@@ -112,6 +118,8 @@ For an LLM, that critic is another network roughly the size of the policy. Keep 
 One trick from classic RL does nothing here, and that's reward-to-go. It gives each token credit only for rewards that come after it.
 
 With a single reward at the end of the response, every token's reward-to-go is the final reward. It only starts to matter in multi-turn agent settings with rewards along the way.
+
+## Reusing a batch with PPO
 
 The next edit lets you reuse a batch. Sampling is expensive, and for LLMs it takes most of the wall-clock time. So you want several gradient steps per batch of rollouts.
 
@@ -157,6 +165,8 @@ In InstructGPT-style PPO, that KL is folded into the per-token reward.
 
 Now add up the bill. You hold four large models in memory: the actor (the policy you're training), the reference, the reward model and the critic. Two of them also carry optimiser state. GRPO was built to cut this bill.
 
+## GRPO and group baselines
+
 GRPO, from the DeepSeekMath paper, keeps PPO's clipped ratio and throws away the critic. For each prompt it samples a group of $G$ responses and uses the group's own statistics as the baseline:
 
 $$
@@ -189,11 +199,17 @@ $$
 
 It only needs the log-probability of the sampled token under both models. It's never negative, and it's unbiased, so on average it gives the right KL.
 
+DeepSeekMath sampled 64 responses per question with a KL coefficient $\beta = 0.04$. R1-Zero later used $G = 16$ and $\beta = 0.001$.
+
 The intuition is pleasant. Within a group, a response better than its siblings goes up, and a worse one goes down. There's no value network to train and no value-model bias.
 
-Pair it with a programmatic checker, like an answer match or passing tests, and you have RLVR, which is RL with verifiable rewards. That's what DeepSeek-R1 scaled up.
+Pair it with a programmatic checker, like an answer match or passing tests, and you have RLVR, which is RL with verifiable rewards. That's what DeepSeek-R1 scaled up. R1-Zero, trained this way straight from the base model, reached 77.9% pass@1 on AIME 2024, as reported in the paper.
+
+GRPO is also the most connected paper in my reading notes. Ten later papers build on it or adopt it.
 
 It also has a sharp edge: if every sample in a group is right, or every one is wrong, every advantage is zero and that prompt teaches nothing. Remember that one too.
+
+### The loss in code
 
 Here's the loss, adapted from my notes. The `mode` switch shows how few lines separate the methods.
 
@@ -230,6 +246,10 @@ Two notes. Original GRPO normalises per sequence first (`per_tok.sum(1) / mask.s
 
 Also, the advantages and old log-probs must be constants. Compute them under `torch.no_grad()` or detach them, or you'll be differentiating through your reward.
 
+## Fixing GRPO
+
+### Four failure modes
+
 Run GRPO long enough on long outputs and four failure modes show up. Nearly every later method targets one of them.
 
 The first is normalisation bias. The $1/|o_i|$ and the division by std skew the weights across lengths and difficulties.
@@ -238,7 +258,9 @@ The second is entropy collapse. Entropy measures how spread out the model's choi
 
 The third is token-level ratio noise. Per-token ratios are high variance. It gets worse with long sequences and with mixture-of-experts (MoE) routing, where each token is sent to a few of many expert sub-networks.
 
-The fourth is train-inference mismatch. The sampler (vLLM, SGLang) and the trainer (FSDP, Megatron) compute slightly different probabilities for the same weights. So samples you think are on-policy are a little off-policy.
+The fourth is train-inference mismatch. The sampler (vLLM, SGLang) and the trainer (FSDP, Megatron) compute slightly different probabilities for the same weights. So samples you think are on-policy are a little off-policy. MiniMax-M1 reports that computing the output head in FP32 raised the correlation between the two stacks' token probabilities from about 0.9 to 0.99.
+
+### Dr. GRPO and the normalisers
 
 The Dr. GRPO paper points out two biases hiding in the normalisers.
 
@@ -246,9 +268,11 @@ Dividing by $|o_i|$ means each token of a long wrong answer is penalised less th
 
 Dividing by the std up-weights prompts with low reward variance. Those are the very easy prompts and the very hard ones.
 
-Their fix is to delete both and divide by a constant, such as the max length. That recovers an unbiased policy gradient.
+Their fix is to delete both and divide by a constant, such as the max length. That recovers an unbiased policy gradient. Their minimal recipe on Qwen2.5-Math-7B, with 8 samples per prompt, reaches 43.3% on AIME 2024, as reported in the paper.
 
 It also comes with a warning I now repeat to anyone who shows me a rising length curve. Length growth can come from the normaliser alone, with no extra reasoning behind it. Check accuracy inside length buckets before celebrating.
+
+### The DAPO ablation
 
 DAPO, from ByteDance Seed, is the most practical list of fixes I know, because it comes with an ablation. An ablation adds one piece at a time so you can see what each piece is worth.
 
@@ -263,21 +287,23 @@ Here it is on Qwen2.5-32B base, scored on AIME 2024, as reported in the paper:
 | + Token-level loss | 42 |
 | + Dynamic sampling (full DAPO) | 50 |
 
-That's 30 to 50, a HUGE jump. Each technique maps onto a term in the general form from earlier.
+That's 30 to 50, a 20-point gain, or about 1.7x the naive score. Dynamic sampling alone adds 8 of those points. Each technique maps onto a term in the general form from earlier.
 
 Clip-Higher changes the clip. It splits the bounds into $\varepsilon_{\text{low}} = 0.2$ and $\varepsilon_{\text{high}} = 0.28$.
 
-With a symmetric 0.2, a rare token can only grow by a factor of 1.2 per batch. That caps exploration of exactly the tokens you'd want to explore, and it speeds up entropy collapse.
+With a symmetric 0.2, a rare token can only grow by a factor of 1.2 per batch, against 1.28 with Clip-Higher. The symmetric bound caps exploration of exactly the tokens you'd want to explore, and it speeds up entropy collapse.
 
-Dynamic sampling fixes the zero-advantage groups from earlier. Drop prompts whose group accuracy is 0 or 1, and keep sampling until the batch is full of useful ones.
+Dynamic sampling fixes the zero-advantage groups from earlier. Drop prompts whose group accuracy is 0 or 1, and keep sampling until the batch is full of useful ones. DAPO fills each step with 512 prompts and 16 responses per prompt.
 
 Token-level loss changes the normaliser to $1/\sum_i |o_i|$, one over the total number of tokens in the group. Long samples now carry weight in proportion to their length, and repetition in long outputs is penalised per token.
 
-Overlong shaping fixes the reward. A response that hits the length cap gets cut off, so its reward is noisy. DAPO masks those truncated responses, then adds a soft length penalty in a buffer zone just before the hard cap.
+Overlong shaping fixes the reward. A response that hits the length cap gets cut off, so its reward is noisy. DAPO masks those truncated responses, then adds a soft length penalty in a 4,096-token buffer zone just before the hard cap.
 
 DAPO also drops the KL term entirely. That's a big change from RLHF, where the KL term is what keeps the model close to the reference.
 
 The reason is that a verifier is much harder to hack than a learned reward model. With a verifier, the leash matters less.
+
+### Sequence ratios in GSPO
 
 GSPO, from the Qwen team, goes after the ratio itself. They argue that GRPO's per-token ratios are an invalid use of importance sampling.
 
@@ -299,11 +325,13 @@ So $s_i$ is the geometric mean of the token ratios. GSPO clips $s_i$ the same wa
 
 Because it's a geometric mean, it barely moves. So the clip range is about two orders of magnitude narrower. The paper uses 3e-4 and 4e-4, against 0.2 and 0.27 for their GRPO baseline.
 
-GSPO ends up clipping far more tokens than GRPO and still trains more efficiently. That says something unflattering about how noisy GRPO's token-level gradients are.
+GSPO ends up clipping far more tokens than GRPO, with a clipped fraction about two orders of magnitude higher in the paper, and still trains more efficiently. That says something unflattering about how noisy GRPO's token-level gradients are.
 
 The case is strongest for MoE models. After an RL update, roughly 10% of the experts activated for the same input change, which makes token ratios jump around.
 
 People had been pinning expert choices to make up for this, a trick called "routing replay". The sequence likelihood is stable enough that GSPO can drop that workaround.
+
+### Clipped weights in CISPO
 
 MiniMax's CISPO spots a different problem with the PPO clip. When a token's ratio leaves the trust region, the `min` zeroes its gradient. The trust region is the band $1 \pm \epsilon$ where the update is allowed to act.
 
@@ -329,13 +357,19 @@ MiniMax reports roughly a 2x speedup over DAPO on Qwen2.5-32B. It matches DAPO's
 
 GSPO and CISPO are competing answers to the same problem, which is unstable token ratios, especially in MoE. GSPO moves the ratio to the sequence. CISPO stops letting the ratio decide whether a token gets a gradient.
 
+### Entropy collapse
+
 Entropy deserves its own post, but here's the short version. One analysis of RL for reasoning models finds that the change in entropy per step is driven by the covariance between a token's log-probability and its advantage.
 
 In plain words, confident tokens with high advantage make the policy sharper. Rare tokens with high advantage make it wider.
 
 Their empirical fit is $R = -a\,e^{\mathcal{H}} + b$, where $\mathcal{H}$ is entropy and $a$ and $b$ are fitted constants. Performance is bought with entropy, and you hit a ceiling when entropy runs out.
 
-Their fixes, Clip-Cov and KL-Cov, act on the tiny fraction of tokens with outlier covariance. Clip-Higher and CISPO are entropy fixes too, among other things. Both stop the clip from silencing rare tokens.
+Their fixes, Clip-Cov and KL-Cov, act on the few tokens with outlier covariance. The top 0.02% of tokens have a covariance around 5.65, against a mean near 0.003.
+
+On Qwen2.5-7B they report an average of 38.6 for GRPO, 40.4 for Clip-Cov and 40.6 for KL-Cov. Clip-Higher and CISPO are entropy fixes too, among other things. Both stop the clip from silencing rare tokens.
+
+## The whole lineage
 
 Here's the whole lineage in one table.
 
@@ -352,20 +386,34 @@ Here's the whole lineage in one table.
 
 When a new paper comes out, I now read it as an edit to this one formula. I check four things: what the baseline is, whether there's a ratio, at what level it lives, and what happens when it gets clipped. That's usually the whole contribution.
 
-One 2026 paper, GPPO, already frames DAPO and others as special cases of a divergence-based trust region. So the field has noticed the same thing.
+One 2026 paper, GPPO, already frames DAPO and others as special cases of a divergence-based trust region. Its best variant is reported at up to 50% over GRPO on math. So the field has noticed the same thing.
+
+## My default recipe
 
 My default starting point is assembled from the recipes. No single paper uses exactly this:
 
-- A group baseline with $G$ between 8 and 16.
+- A group baseline with $G$ between 8 and 16. Dr. GRPO used 8, and DAPO and R1-Zero used 16.
 - No std scaling, or at least question it.
 - Token-level or constant normalisation.
 - $\varepsilon_{\text{low}} = 0.2$ and $\varepsilon_{\text{high}} = 0.28$.
-- No KL, or a tiny one.
+- No KL, or a tiny one, like R1-Zero's 0.001.
 - Drop zero-variance groups, and mask truncated samples.
 - Some fix for train-inference mismatch.
 - For MoE, sequence-level ratios.
 
 Recent TRL versions expose most of this as `loss_type` options (`dapo`, `dr_grpo`, `cispo`, `sapo`). That's a decent signal of which variants are considered mainstream.
+
+For reference, here are the clip bounds the papers report:
+
+| Method | $\varepsilon_{\text{low}}$ | $\varepsilon_{\text{high}}$ |
+| --- | --- | --- |
+| PPO, original GRPO | 0.2 | 0.2 |
+| DAPO | 0.2 | 0.28 |
+| Magistral | 0.2 | 0.26 to 0.28 |
+| ProRL | 0.2 | 0.4 |
+| GSPO (sequence ratio) | 3e-4 | 4e-4 |
+
+### What to log and check
 
 Log more than reward. Track entropy, length and clip fraction too. Clip fraction is the share of tokens that hit the clip in a step.
 
@@ -373,10 +421,14 @@ Entropy dropping sharply early is the first sign of trouble. Rising length doesn
 
 Run a random-reward control. The Spurious Rewards paper got Qwen2.5-Math-7B up 21.4 points on MATH-500 with random rewards, against 29.1 with real ones.
 
-They traced it to a clipping bias in GRPO that amplifies behaviour the model already had. The effect didn't transfer to Llama or OLMo. If your gain survives a random-reward run and a non-Qwen base model, I'll believe it.
+They traced it to a clipping bias in GRPO that amplifies behaviour the model already had. One such behaviour, writing Python-style reasoning without running it, rose from 65% to over 90% of responses. The effect didn't transfer to Llama or OLMo. If your gain survives a random-reward run and a non-Qwen base model, I'll believe it.
+
+## The open question
 
 There's one open question I keep coming back to. I want to know whether any of this teaches the model something new, or whether it only sharpens what the base model could already do at large $k$.
 
-Here pass@k means the model gets $k$ tries and counts as right if any one of them is right. The pass@k evidence leans towards sharpening, and prolonged-RL work argues otherwise.
+Here pass@k means the model gets $k$ tries and counts as right if any one of them is right. The pass@k evidence leans towards sharpening. RL models win at $k = 1$, but base models match or beat them at large $k$.
+
+Prolonged-RL work argues otherwise. ProRL trained a 1.5B model for over 2,000 steps, about 16k GPU hours, and reports pass@k gains on tasks where the base model scores zero.
 
 All of these methods share one estimator. So I think the answer is more likely to come from the data and the environments than from yet another change to the clip.
