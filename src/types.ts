@@ -22,4 +22,6 @@ export type FocusArea = {
   title: string;
   short: string;
   blurb: string;
+  // false = a /projects filter pill only, not shown in Quick links or the blog.
+  homepage?: boolean;
 };

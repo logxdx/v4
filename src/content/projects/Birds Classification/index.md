@@ -5,7 +5,7 @@ date: "October 2024"
 repoURL: "https://github.com/logxdx/Bird-Species-Classification"
 # demoURL: ""
 category: "Vision · CNN"
-areas: []
+areas: [applied-ml]
 tags: ["CNN", "Residual networks", "Class activation maps"]
 featured: false
 ---

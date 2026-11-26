@@ -6,7 +6,7 @@ date: "November 2025"
 # repoURL: "https://github.com/logxdx/Occupancy-Estimation-using-Structural-Vibrations"
 # demoURL: ""
 category: "Applied ML · Signals"
-areas: []
+areas: [applied-ml]
 tags: ["Signal processing", "Deep learning", "Edge inference"]
 featured: false
 ---

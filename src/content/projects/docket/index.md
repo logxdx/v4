@@ -5,7 +5,7 @@ description: "Offline voice notes for Android: on-device transcription, titles, 
 date: "2026-11-19"
 repoURL: "https://github.com/logxdx/docket"
 category: "Mobile · On-device AI"
-areas: []
+areas: [local]
 tags: ["Flutter", "Kotlin", "Android", "On-device ML", "Speech-to-text", "EmbeddingGemma 2"]
 featured: false
 ---

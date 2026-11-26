@@ -29,9 +29,10 @@ export const PROJECTS: Metadata = {
 };
 
 // Slugs that projects and posts list under `areas`; also the /projects?area=<slug> filter.
-export const AREA_SLUGS = ["rag", "agents", "decision", "training"] as const;
+export const AREA_SLUGS = ["rag", "agents", "decision", "training", "systems", "local", "applied-ml", "tools"] as const;
 
-// The areas I work in, in display order.
+// The areas I work in, in display order. Areas with `homepage: false` are
+// extra filter pills for /projects only; Quick links and the blog skip them.
 export const FOCUS_AREAS: FocusArea[] = [
   {
     slug: "rag",
@@ -56,6 +57,34 @@ export const FOCUS_AREAS: FocusArea[] = [
     title: "Fine-tuning & RL",
     short: "Fine-tuning & RL",
     blurb: "Adapting open models with SFT, LoRA and reinforcement learning.",
+  },
+  {
+    slug: "systems",
+    title: "Inference & GPU",
+    short: "Inference & GPU",
+    blurb: "Fast inference and GPU pipelines on small hardware.",
+    homepage: false,
+  },
+  {
+    slug: "local",
+    title: "Local & on-device",
+    short: "Local & on-device",
+    blurb: "Apps where every model runs on my own machine or phone.",
+    homepage: false,
+  },
+  {
+    slug: "applied-ml",
+    title: "Applied ML",
+    short: "Applied ML",
+    blurb: "Models trained for a specific signal or vision task.",
+    homepage: false,
+  },
+  {
+    slug: "tools",
+    title: "Tools",
+    short: "Tools",
+    blurb: "Everyday tools and setups I built for myself.",
+    homepage: false,
   },
 ];
 

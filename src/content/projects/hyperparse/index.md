@@ -5,7 +5,7 @@ description: "A GPU PDF parser in C++ and CUDA that turns everyday documents int
 date: "2026-11-26"
 repoURL: "https://github.com/logxdx/hyperparse"
 category: "Document AI · CUDA"
-areas: [rag]
+areas: [rag, systems]
 tags: ["C++", "CUDA", "TensorRT", "PDFium", "PP-OCRv6", "D-FINE"]
 featured: false
 ---

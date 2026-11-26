@@ -26,7 +26,7 @@ const posts = data.reduce((acc: Acc, post) => {
   }, {});
 
 const years = Object.keys(posts).sort((a, b) => parseInt(b) - parseInt(a));
-const topics = FOCUS_AREAS.map((area) => area.title).join(", ");
+const topics = FOCUS_AREAS.filter((area) => area.homepage !== false).map((area) => area.title).join(", ");
 ---
 
 <PageLayout title={BLOG.TITLE} description={BLOG.DESCRIPTION}>

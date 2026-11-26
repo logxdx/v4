@@ -5,7 +5,7 @@ description: "From-scratch CUDA inference engines for small models, behind one O
 date: "2026-11-25"
 repoURL: "https://github.com/logxdx/lion"
 category: "LLM Inference · CUDA"
-areas: []
+areas: [systems]
 tags: ["CUDA", "C++", "LLM inference", "Tensor cores", "OpenAI API", "Python"]
 featured: false
 ---

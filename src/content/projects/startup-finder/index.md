@@ -5,7 +5,7 @@ description: "Finds recently funded startups hiring for your skills, explains ho
 date: "2026-11-24"
 repoURL: "https://github.com/logxdx/startup-finder"
 category: "Web Scraping · Job Search"
-areas: []
+areas: [tools]
 tags: ["Python", "FastAPI", "SQLite", "crawl4ai", "httpx", "Jinja2"]
 featured: false
 ---

@@ -16,7 +16,7 @@ const posts = (await getCollection("blog"))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 const used = new Set<string>();
-const areas = FOCUS_AREAS.map((area) => {
+const areas = FOCUS_AREAS.filter((area) => area.homepage !== false).map((area) => {
   const entries = [...projects, ...posts]
     .filter((entry) => entry.data.areas.includes(area.slug))
     .filter((entry) => !used.has(`${entry.collection}/${entry.slug}`))

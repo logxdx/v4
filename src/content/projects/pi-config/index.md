@@ -5,7 +5,7 @@ description: "My setup for the pi terminal coding agent, with extensions for rea
 date: "November 2026"
 repoURL: "https://github.com/logxdx/pi-config"
 category: "Agents · Tooling"
-areas: [agents]
+areas: [agents, tools]
 tags: ["TypeScript", "Chrome MV3 extension", "LLM agents", "llama.cpp", "tmux"]
 featured: false
 ---
