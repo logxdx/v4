@@ -39,6 +39,8 @@ const projects = defineCollection({
     short: z.string().optional(),
     description: z.string(),
     date: z.coerce.date(),
+    // Set when a dated update is added to the page; shown next to the date.
+    updated: z.coerce.date().optional(),
     draft: z.boolean().optional(),
     demoURL: z.string().optional(),
     repoURL: z.string().optional(),

@@ -50,6 +50,14 @@ const links = [
         <div class="font-base text-sm">
           <FormattedDate date={project.data.date} />
         </div>
+        {project.data.updated && (
+          <>
+            &bull;
+            <div class="font-base text-sm">
+              Updated <FormattedDate date={project.data.updated} />
+            </div>
+          </>
+        )}
         &bull;
         <div class="font-base text-sm">
           {readingTime(project.body)}
