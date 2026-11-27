@@ -5,6 +5,7 @@ import tailwind from "@astrojs/tailwind";
 import react from "@astrojs/react";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import rehypeEmphasizeNumbers from "./src/lib/rehype-emphasize-numbers.mjs";
 
 export default defineConfig({
   site: "https://v4-one-theta.vercel.app",
@@ -14,12 +15,12 @@ export default defineConfig({
   },
   markdown: {
     remarkPlugins: [remarkMath],
-    rehypePlugins: [rehypeKatex],
+    rehypePlugins: [rehypeKatex, rehypeEmphasizeNumbers],
   },
   integrations: [
     mdx({
       remarkPlugins: [remarkMath],
-      rehypePlugins: [rehypeKatex],
+      rehypePlugins: [rehypeKatex, rehypeEmphasizeNumbers],
     }),
     sitemap(),
     tailwind(),
