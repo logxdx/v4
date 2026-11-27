@@ -15,9 +15,9 @@ hyperparse is a PDF parser that runs on one consumer GPU. It handles common docu
 
 Hosted document-parsing APIs are expensive, and the open-source pipelines usually assume a big GPU and a Python stack. I wanted a professional-grade pipeline that fits a 6 GB laptop GPU, so it's C++ and CUDA end to end with TensorRT for every model.
 
-## Updates
+## Update: 27/11/2026
 
-### 27 November 2026: about 3x faster, and better OCR lines
+About 3x faster, and better OCR lines.
 
 hyperparse got much faster this round, mostly from keeping the GPU busy. Text detection and recognition are now pipelined across pages, and the server overlaps up to 8 documents in one long-lived pipeline. Formulas have their own thread, and pages are assembled on three more.
 
@@ -46,6 +46,8 @@ OCR lines now merge only inside one layout region, in reading order. They used t
 | BHL character error rate (lower is better) | 0.085 | **0.050** |
 
 The BHL error rate dropped by about 41%. It's now within 0.002 of OCRia-nano-1's 0.048 and ahead of Indra, Marker and LiteParse, so historical print is no longer a weak spot. On olmOCR-bench, hyperparse now leads OCRia-nano-1 by 5.0 points.
+
+---
 
 ## What it produces
 
