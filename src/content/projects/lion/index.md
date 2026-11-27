@@ -7,6 +7,16 @@ repoURL: "https://github.com/logxdx/lion"
 category: "LLM Inference · CUDA"
 areas: [systems]
 tags: ["CUDA", "C++", "LLM inference", "Tensor cores", "OpenAI API", "Python"]
+stats:
+  - value: "4.2x"
+    label: "Faster decode than llama.cpp at 150k context, 4 streams (50.7 vs 12.0 tok/s)"
+  - value: "70.0"
+    unit: "tok/s"
+    label: "Per stream at 150k context with 2 streams"
+  - value: "56.9 s"
+    label: "To prefill 150k tokens, against about 235 s for llama.cpp"
+  - value: "96%"
+    label: "Of memory bandwidth reached by the decode kernels"
 featured: false
 ---
 

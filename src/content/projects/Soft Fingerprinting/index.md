@@ -8,6 +8,15 @@ date: "November 2025"
 category: "Applied ML · Signals"
 areas: [applied-ml]
 tags: ["Signal processing", "Deep learning", "Edge inference"]
+stats:
+  - value: "~4x"
+    label: "Fewer missed detections (723 → 183)"
+  - value: "~2x"
+    label: "Fewer false alarms (331 → 170)"
+  - value: "96–99%"
+    label: "Accuracy across users"
+  - value: "~165x"
+    label: "Fewer missed detections for the hardest users (331 → 2)"
 featured: false
 ---
 

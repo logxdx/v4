@@ -8,6 +8,18 @@ repoURL: "https://github.com/logxdx/hyperparse"
 category: "Document AI · CUDA"
 areas: [rag, systems]
 tags: ["C++", "CUDA", "TensorRT", "PDFium", "PP-OCRv6", "D-FINE"]
+stats:
+  - value: "~64"
+    unit: "pages/s"
+    label: "Server throughput on a 6 GB laptop GPU"
+    delta: { dir: up, text: "3.2x faster than the previous build" }
+  - value: "65.9"
+    label: "olmOCR-bench, 5.0 points ahead of OCRia-nano-1"
+  - value: "4 of 4"
+    label: "Parsing benchmarks where it ranks first"
+  - value: "0.5–0.7 s"
+    label: "Worst-case server latency"
+    delta: { dir: down, text: "from 13 to 15 s" }
 featured: false
 ---
 

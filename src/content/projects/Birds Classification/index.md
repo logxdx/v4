@@ -7,6 +7,13 @@ repoURL: "https://github.com/logxdx/Bird-Species-Classification"
 category: "Vision · CNN"
 areas: [applied-ml]
 tags: ["CNN", "Residual networks", "Class activation maps"]
+stats:
+  - value: "90.72%"
+    label: "Accuracy on 10 bird species"
+  - value: "1.51x"
+    label: "The 60.13% baseline, about 30 points better"
+  - value: "15"
+    label: "Training epochs, with the learning rate cut 10x every 5"
 featured: false
 ---
 

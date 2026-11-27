@@ -7,6 +7,17 @@ repoURL: "https://github.com/logxdx/sketch-tutor"
 category: "AI Agents · Education"
 areas: [agents]
 tags: ["Next.js", "Vercel AI SDK", "Excalidraw", "three.js", "WebAssembly", "TypeScript"]
+stats:
+  - value: "~65"
+    unit: "MB"
+    label: "Text-to-speech model running in the browser on one CPU thread"
+  - value: "1.58-bit"
+    label: "Speech-to-text model, about 199 MB"
+  - value: "16"
+    unit: "steps"
+    label: "Agent loop by default, up to 40"
+  - value: "2–4"
+    label: "Probe questions before Learn mode draws a route"
 featured: false
 ---
 

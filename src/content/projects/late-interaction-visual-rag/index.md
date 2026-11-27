@@ -8,6 +8,15 @@ repoURL: "https://github.com/logxdx/contextualized-late-interation-with-pdfs"
 category: "RAG · Vision"
 areas: [rag]
 tags: ["Late interaction", "ColPali", "ColQwen", "Qdrant", "LiteLLM", "Streamlit"]
+stats:
+  - value: "13x"
+    label: "Faster retrieval at best, with pooled prefetch and a full rerank"
+  - value: "10 → 2"
+    label: "Pages prefetched, then kept after the full rerank"
+  - value: "int8"
+    label: "Quantized multi-vectors, stored on disk"
+  - value: "5"
+    label: "ColPali-family models supported"
 featured: true
 ---
 

@@ -7,6 +7,16 @@ repoURL: "https://github.com/logxdx/docket"
 category: "Mobile · On-device AI"
 areas: [local]
 tags: ["Flutter", "Kotlin", "Android", "On-device ML", "Speech-to-text", "EmbeddingGemma 2"]
+stats:
+  - value: "15–40"
+    unit: "ms"
+    label: "To tag a note on the phone, from 36 topics"
+  - value: "25"
+    label: "Languages for on-device speech-to-text"
+  - value: "1.6–3.3 s"
+    label: "To write a note's title on the phone"
+  - value: "4x"
+    label: "Smaller search vectors with int8"
 featured: false
 ---
 

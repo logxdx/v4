@@ -7,6 +7,13 @@ repoURL: "https://github.com/logxdx/pi-config"
 category: "Agents · Tooling"
 areas: [agents, tools]
 tags: ["TypeScript", "Chrome MV3 extension", "LLM agents", "llama.cpp", "tmux"]
+stats:
+  - value: "4 of 4"
+    label: "Small 28 px targets hit by the pointing tool on a 1920x1080 page"
+  - value: "10"
+    label: "pi sessions sharing the browser at once"
+  - value: "5%"
+    label: "Of the model's context window, the output guard's budget"
 featured: false
 ---
 

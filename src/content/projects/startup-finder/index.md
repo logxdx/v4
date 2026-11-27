@@ -7,6 +7,17 @@ repoURL: "https://github.com/logxdx/startup-finder"
 category: "Web Scraping · Job Search"
 areas: [tools]
 tags: ["Python", "FastAPI", "SQLite", "crawl4ai", "httpx", "Jinja2"]
+stats:
+  - value: "100"
+    unit: "points"
+    label: "Match score for every job, with the reasons kept"
+  - value: "90"
+    unit: "days"
+    label: "Funding window for a startup to count as recent"
+  - value: "8"
+    label: "Funding news feeds, plus YC, Product Hunt and job boards"
+  - value: "1.5 s"
+    label: "Minimum gap between requests to the same host"
 featured: false
 ---
 

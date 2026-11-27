@@ -1,6 +1,20 @@
 import { defineCollection, reference, z } from "astro:content";
 import { AREA_SLUGS } from "../consts";
 
+// Headline numbers shown under the title: the first is the hero figure.
+const stats = z
+  .array(
+    z.object({
+      value: z.string(),
+      unit: z.string().optional(),
+      label: z.string(),
+      // An improvement next to the number, e.g. { dir: "up", text: "3.2x vs before" }.
+      delta: z.object({ dir: z.enum(["up", "down"]), text: z.string() }).optional(),
+    })
+  )
+  .max(4)
+  .default([]);
+
 const area = z.enum(AREA_SLUGS);
 
 const blog = defineCollection({
@@ -16,6 +30,7 @@ const blog = defineCollection({
     draft: z.boolean().optional(),
     areas: z.array(area).default([]),
     tags: z.array(z.string()).default([]),
+    stats,
     // Personal experiment write-up; labelled as such on cards and the post.
     experiment: z.boolean().default(false),
   }),
@@ -50,6 +65,7 @@ const projects = defineCollection({
     areas: z.array(area).default([]),
     // Stack / technique chips shown on the project page.
     tags: z.array(z.string()).default([]),
+    stats,
     // Pinned to the top of the homepage list.
     featured: z.boolean().default(false),
     // Slug of a blog post that writes this project up (src/content/blog/<slug>).

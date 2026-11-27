@@ -1,0 +1,108 @@
+---
+// Headline numbers for a project or post: the first is the hero figure,
+// the rest are stat tiles. Values use proportional figures (big standalone
+// numbers); an improvement shows an arrow plus a direction colour, so the
+// meaning never rests on colour alone.
+type Stat = {
+  value: string;
+  unit?: string;
+  label: string;
+  delta?: { dir: "up" | "down"; text: string };
+};
+
+type Props = { stats: Stat[] };
+
+const { stats } = Astro.props;
+const [hero, ...tiles] = stats;
+---
+
+<section class="stat-strip" aria-label="Key numbers">
+  {hero && (
+    <div class="stat-hero">
+      <div class="stat-hero-value">
+        {hero.value}
+        {hero.unit && <span class="stat-hero-unit">{hero.unit}</span>}
+      </div>
+      <div class="stat-label">{hero.label}</div>
+      {hero.delta && (
+        <div class="stat-delta">
+          <span aria-hidden="true">{hero.delta.dir === "up" ? "↑" : "↓"}</span>
+          {hero.delta.text}
+        </div>
+      )}
+    </div>
+  )}
+  {tiles.length > 0 && (
+    <ul class:list={["stat-tiles", tiles.length === 2 ? "cols-2" : tiles.length >= 3 ? "cols-3" : "cols-1"]}>
+      {tiles.map((stat) => (
+        <li class="stat-tile">
+          <div class="stat-value">
+            {stat.value}
+            {stat.unit && <span class="stat-unit">{stat.unit}</span>}
+          </div>
+          <div class="stat-label">{stat.label}</div>
+          {stat.delta && (
+            <div class="stat-delta">
+              <span aria-hidden="true">{stat.delta.dir === "up" ? "↑" : "↓"}</span>
+              {stat.delta.text}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+</section>
+
+<style>
+  .stat-strip {
+    @apply space-y-3;
+    --stat-good: #17692f;
+  }
+  :global(html.dark) .stat-strip {
+    --stat-good: #3fb950;
+  }
+
+  .stat-hero {
+    @apply rounded-lg border px-5 py-4;
+    border-color: var(--card-border);
+    background: var(--card-surface);
+  }
+  .stat-hero-value {
+    @apply font-semibold leading-none tracking-tight text-black dark:text-white;
+    font-size: 3.25rem;
+  }
+  .stat-hero-unit {
+    @apply ml-2 text-xl font-medium tracking-normal opacity-60;
+  }
+
+  .stat-tiles {
+    @apply grid grid-cols-1 gap-3;
+  }
+  @media (min-width: 640px) {
+    .stat-tiles.cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .stat-tiles.cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .stat-tile {
+    @apply rounded-lg border px-4 py-3;
+    border-color: var(--card-border);
+    background: var(--card-surface);
+  }
+  .stat-value {
+    @apply text-2xl font-semibold leading-tight text-black dark:text-white;
+  }
+  .stat-unit {
+    @apply ml-1 text-sm font-medium opacity-60;
+  }
+
+  .stat-label {
+    @apply mt-1 text-sm;
+  }
+  .stat-delta {
+    @apply mt-1.5 flex items-center gap-1 text-xs font-medium;
+    color: var(--stat-good);
+  }
+</style>

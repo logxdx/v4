@@ -8,6 +8,15 @@ repoURL: "https://github.com/logxdx/ZetaDB"
 category: "Retrieval · Multimodal"
 areas: [rag, local]
 tags: ["EmbeddingGemma 2", "SQLite + sqlite-vec", "Hybrid search", "TensorRT", "FastAPI", "Svelte"]
+stats:
+  - value: "12.1x"
+    label: "Faster text embedding on the GPU than on the CPU"
+  - value: "10.8x"
+    label: "Faster OCR on the GPU (0.16 vs 1.72 s per image)"
+  - value: "2.2 GB"
+    label: "Peak GPU memory while ingesting"
+  - value: "8:20"
+    label: "Where a 17-minute speech says \"why we go to the moon\""
 featured: false
 ---
 

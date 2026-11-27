@@ -5,6 +5,18 @@ description: "How my pi agent grew from driving my niri desktop into a voice ass
 date: "2026-11-19"
 areas: [agents]
 tags: ["Jarvis", "pi", "Computer use", "Voice", "Subagents", "Advisor"]
+stats:
+  - value: "28"
+    unit: "ms"
+    label: "To pick the right tool group for a request"
+  - value: "7"
+    unit: "ms"
+    label: "For the global stop to halt everything"
+  - value: "23/23"
+    label: "End-to-end runs passed with the local planner"
+  - value: "25–70"
+    unit: "ms"
+    label: "Per desktop action through the accessibility tree"
 experiment: true
 ---
 

@@ -108,4 +108,5 @@ article .katex-display {
 }
 article table {
   @apply block overflow-x-auto;
+  font-variant-numeric: tabular-nums;
 }

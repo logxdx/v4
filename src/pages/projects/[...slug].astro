@@ -8,6 +8,7 @@ import { readingTime } from "@lib/utils";
 import BackToPrev from "@components/BackToPrev.astro";
 import Link from "@components/Link.astro";
 import TagList from "@components/TagList.astro";
+import StatStrip from "@components/StatStrip.astro";
 
 export async function getStaticPaths() {
   const projects = (await getCollection("projects"))
@@ -81,6 +82,11 @@ const links = [
       {project.data.tags.length > 0 && (
         <div class="animate pt-3">
           <TagList tags={project.data.tags} />
+        </div>
+      )}
+      {project.data.stats.length > 0 && (
+        <div class="animate pt-6">
+          <StatStrip stats={project.data.stats} />
         </div>
       )}
     </div>
