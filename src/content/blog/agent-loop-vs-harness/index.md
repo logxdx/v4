@@ -5,16 +5,6 @@ description: "What an agent harness adds around the simple agent loop, and which
 date: "2026-09-28"
 areas: [agents]
 tags: ["Agent harness", "Tool calling", "Checkpointing", "Prompt caching", "Sandboxing"]
-stats:
-  - value: "1.5M"
-    unit: "tokens"
-    label: "Sent over a 30-turn run whose final transcript is 95K"
-  - value: "~6x"
-    label: "Cheaper with a warm prompt cache ($3.09 → $0.53)"
-  - value: "13.6%"
-    label: "Of planted dangerous commands caught by human approval"
-  - value: "2.9x"
-    label: "ARC-AGI-3 score from harness changes alone (13.3% → 38.3%)"
 experiment: false
 ---
 

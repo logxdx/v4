@@ -1,7 +1,7 @@
 import { defineCollection, reference, z } from "astro:content";
 import { AREA_SLUGS } from "../consts";
 
-// Headline numbers shown under the title: the first is the hero figure.
+// Headline numbers shown under a project's title: the first is the hero figure.
 const stats = z
   .array(
     z.object({
@@ -30,7 +30,6 @@ const blog = defineCollection({
     draft: z.boolean().optional(),
     areas: z.array(area).default([]),
     tags: z.array(z.string()).default([]),
-    stats,
     // Personal experiment write-up; labelled as such on cards and the post.
     experiment: z.boolean().default(false),
   }),

@@ -5,7 +5,6 @@ import PageLayout from "@layouts/PageLayout.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import TagList from "@components/TagList.astro";
-import StatStrip from "@components/StatStrip.astro";
 import { readingTime } from "@lib/utils";
 import BackToPrev from "@components/BackToPrev.astro";
 import Link from "@components/Link.astro";
@@ -87,11 +86,6 @@ const areaLabel = [
       {post.data.tags.length > 0 && (
         <div class="animate pt-3">
           <TagList tags={post.data.tags} />
-        </div>
-      )}
-      {post.data.stats.length > 0 && (
-        <div class="animate pt-6">
-          <StatStrip stats={post.data.stats} />
         </div>
       )}
     </div>

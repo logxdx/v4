@@ -5,16 +5,6 @@ description: "How I set up the data, training, calibration and abstain gate for 
 date: "2026-09-19"
 areas: [training, decision]
 tags: ["LoRA", "QLoRA", "Qwen3.5", "Soft labels", "Calibration", "vLLM"]
-stats:
-  - value: "~30"
-    unit: "ms"
-    label: "Per decision on a 6 GB laptop GPU"
-  - value: "+20–26"
-    label: "Points from training on the task, on every base"
-  - value: "92%"
-    label: "Of inputs decided alone, at about 100% accuracy"
-  - value: "~3"
-    label: "Points from going from 0.8B to 2B"
 experiment: false
 ---
 

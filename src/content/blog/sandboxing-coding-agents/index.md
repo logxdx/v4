@@ -5,15 +5,6 @@ description: "How I'd keep a coding agent away from my secrets on macOS and Linu
 date: "2026-09-29"
 areas: [agents]
 tags: ["Seatbelt", "bubblewrap", "Landlock", "seccomp", "gVisor", "Prompt injection"]
-stats:
-  - value: "13.6%"
-    label: "Of planted dangerous commands caught by human approval"
-  - value: "~3x"
-    label: "Drop in that catch rate over a session (17% → 5%)"
-  - value: "84%"
-    label: "Fewer permission prompts once Claude Code was sandboxed"
-  - value: "1 in 6"
-    label: "Bad actions missed by an auto-mode classifier"
 experiment: true
 ---
 

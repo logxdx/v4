@@ -5,13 +5,6 @@ description: "How REINFORCE, PPO, GRPO, DAPO, GSPO and CISPO all come from one p
 date: "2026-10-21"
 areas: [training]
 tags: ["REINFORCE", "PPO", "GRPO", "DAPO", "GSPO", "CISPO"]
-stats:
-  - value: "30 → 50"
-    label: "AIME 2024 with DAPO's fixes, about 1.7x, as reported"
-  - value: "46%"
-    label: "Less GPU memory with ReMax than PPO, as reported"
-  - value: "77.9%"
-    label: "R1-Zero pass@1 on AIME 2024, as reported"
 experiment: false
 ---
 

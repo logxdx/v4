@@ -6,18 +6,6 @@ date: "2026-09-14"
 updated: "2026-11-15"
 areas: [agents]
 tags: ["niri", "Wayland", "AT-SPI", "LFM3", "llama.cpp", "Computer use"]
-stats:
-  - value: "312 → 0"
-    unit: "px"
-    label: "Worst pointer error, before and after calibration"
-  - value: "5,341"
-    unit: "MiB"
-    label: "Three models on one 6 GB GPU, of 6,141"
-  - value: "28"
-    unit: "ms"
-    label: "To route a task to the right tools, 31 of 38 right"
-  - value: "47/51"
-    label: "Hard evaluation tasks passed"
 experiment: true
 ---
 
